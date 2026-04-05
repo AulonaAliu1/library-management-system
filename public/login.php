@@ -17,7 +17,7 @@ require_once __DIR__ . '/../app/includes/navbar.php';
 <main class="container main-content">
     <section class="card card-narrow">
         <h1>Sign in</h1>
-        <p class="text-muted">Phase I: form structure only. Login logic (sessions, validation) — TODO for auth teammate.</p>
+        <p class="text-muted">Welcome back. Enter your credentials to securely access your account.</p>
 
         <!-- TODO: wire POST to AuthService::authenticate() and set session / cookies -->
         <form class="form-stack" action="" method="post" novalidate>

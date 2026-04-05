@@ -19,7 +19,7 @@ require_once __DIR__ . '/../app/includes/navbar.php';
     <section class="card">
         <h1>Library Management System</h1>
         <p class="lead">
-            This is the <strong>Phase I</strong> shared template: dummy data only, no database, and feature modules are placeholders for your team.
+             Manage books, users, and borrowing activities in one place.
         </p>
         <p>
             <a class="btn btn-primary" href="login.php">Go to login</a>
