@@ -36,3 +36,42 @@ function h(?string $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
+
+/**
+ * Returns the authenticated user stored in session, if available.
+ */
+function current_user(): ?array
+{
+    if (!isset($_SESSION['user']) || !is_array($_SESSION['user'])) {
+        return null;
+    }
+
+    return $_SESSION['user'];
+}
+
+function is_logged_in(): bool
+{
+             
+    return current_user() !== null;
+}
+
+function current_role(): ?string
+{
+    $user = current_user();
+
+    if ($user === null || !isset($user['role']) || !is_string($user['role']) || $user['role'] === '') {
+        return null;
+    }
+
+    return $user['role'];
+}
+
+function is_admin(): bool
+{
+    return current_role() === 'admin';
+}
+
+function is_member(): bool
+{
+    return current_role() === 'member';
+}
