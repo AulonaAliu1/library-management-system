@@ -5,6 +5,10 @@ session_start();
 
 define('LMS_ENTRY', 'pages');
 
+require_once __DIR__ . '/../helpers/auth_guard.php';
+
+require_login();
+
 $pageTitle = 'Dashboard';
 
 require_once __DIR__ . '/../includes/header.php';

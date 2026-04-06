@@ -8,7 +8,37 @@ session_start();
 
 define('LMS_ENTRY', 'public');
 
+require_once __DIR__ . '/../app/helpers/functions.php';
+require_once __DIR__ . '/../app/services/AuthService.php';
+
+if (is_logged_in()) {
+    redirect('../app/pages/dashboard.php');
+}
+
 $pageTitle = 'Login';
+$errorMessage = flash_get('error');
+$username = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim((string) ($_POST['username'] ?? ''));
+    $password = (string) ($_POST['password'] ?? '');
+
+    if ($username === '' || $password === '') {
+        $errorMessage = 'Please enter both your username or email and password.';
+    } else {
+        $authService = new AuthService();
+        $user = $authService->authenticate($username, $password);
+
+        if ($user === null) {
+            $errorMessage = 'Invalid username or password.';
+        } else {
+            session_regenerate_id(true);
+            $_SESSION['user'] = $user;
+
+            redirect('../app/pages/dashboard.php');
+        }
+    }
+}
 
 require_once __DIR__ . '/../app/includes/header.php';
 require_once __DIR__ . '/../app/includes/navbar.php';
@@ -19,11 +49,14 @@ require_once __DIR__ . '/../app/includes/navbar.php';
         <h1>Sign in</h1>
         <p class="text-muted">Welcome back. Enter your credentials to securely access your account.</p>
 
-        <!-- TODO: wire POST to AuthService::authenticate() and set session / cookies -->
+        <?php if ($errorMessage !== null) : ?>
+            <div class="flash flash-error"><?= h($errorMessage) ?></div>
+        <?php endif; ?>
+
         <form class="form-stack" action="" method="post" novalidate>
             <div class="form-group">
                 <label for="username">Username or email</label>
-                <input type="text" id="username" name="username" autocomplete="username">
+                <input type="text" id="username" name="username" value="<?= h($username) ?>" autocomplete="username">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>

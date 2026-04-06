@@ -6,7 +6,6 @@ declare(strict_types=1);
 
 session_start();
 
-// TODO: clear auth-related session keys, invalidate remember-me cookie if used
 $_SESSION = [];
 
 if (ini_get('session.use_cookies')) {
@@ -17,5 +16,5 @@ if (ini_get('session.use_cookies')) {
 session_destroy();
 
 // Redirect placeholder — adjust path if your virtual host differs
-header('Location: index.php');
+header('Location: login.php');
 exit;

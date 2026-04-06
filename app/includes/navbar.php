@@ -5,6 +5,9 @@ require_once __DIR__ . '/../helpers/functions.php';
 
 $isLoggedIn = is_logged_in();
 $isAdmin = is_admin();
+$flashError = flash_get('error');
+$flashSuccess = flash_get('success');
+$flashInfo = flash_get('info');
 
 if (LMS_ENTRY === 'public') {
     $homeUrl = 'index.php';
@@ -40,3 +43,19 @@ if (LMS_ENTRY === 'public') {
         </ul>
     </nav>
 </header>
+
+<?php if ($flashError !== null || $flashSuccess !== null || $flashInfo !== null) : ?>
+    <div class="container main-content">
+        <?php if ($flashError !== null) : ?>
+            <div class="flash flash-error"><?= h($flashError) ?></div>
+        <?php endif; ?>
+
+        <?php if ($flashSuccess !== null) : ?>
+            <div class="flash flash-success"><?= h($flashSuccess) ?></div>
+        <?php endif; ?>
+
+        <?php if ($flashInfo !== null) : ?>
+            <div class="flash flash-info"><?= h($flashInfo) ?></div>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
