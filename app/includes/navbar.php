@@ -1,8 +1,13 @@
 <?php
 declare(strict_types=1);
 
-$role = $_SESSION['role'] ?? null;
-$isLoggedIn = !empty($_SESSION['user_id']);
+require_once __DIR__ . '/../helpers/functions.php';
+
+$isLoggedIn = is_logged_in();
+$isAdmin = is_admin();
+$flashError = flash_get('error');
+$flashSuccess = flash_get('success');
+$flashInfo = flash_get('info');
 
 if (LMS_ENTRY === 'public') {
     $homeUrl = 'index.php';
@@ -18,23 +23,39 @@ if (LMS_ENTRY === 'public') {
 ?>
 <header class="site-header">
     <nav class="navbar container" aria-label="Main">
-        <a class="navbar-brand" href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8') ?>">LMS</a>
+        <a class="navbar-brand" href="<?= h($homeUrl) ?>">LMS</a>
         <ul class="navbar-links">
-            <li><a href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8') ?>">Home</a></li>
-            <li><a href="<?= htmlspecialchars($pageBase . 'dashboard.php', ENT_QUOTES, 'UTF-8') ?>">Dashboard</a></li>
-            <li><a href="<?= htmlspecialchars($pageBase . 'books.php', ENT_QUOTES, 'UTF-8') ?>">Books</a></li>
-            <li><a href="<?= htmlspecialchars($pageBase . 'requests.php', ENT_QUOTES, 'UTF-8') ?>">Requests</a></li>
-            <li><a href="<?= htmlspecialchars($pageBase . 'borrowings.php', ENT_QUOTES, 'UTF-8') ?>">Borrowings</a></li>
-            <li><a href="<?= htmlspecialchars($pageBase . 'profile.php', ENT_QUOTES, 'UTF-8') ?>">Profile</a></li>
-            <li><a href="<?= htmlspecialchars($pageBase . 'settings.php', ENT_QUOTES, 'UTF-8') ?>">Settings</a></li>
-            <?php if ($role === 'admin') : ?>
-                <li><a href="<?= htmlspecialchars($pageBase . 'members.php', ENT_QUOTES, 'UTF-8') ?>">Members</a></li>
+            <li><a href="<?= h($homeUrl) ?>">Home</a></li>
+            <li><a href="<?= h($pageBase . 'dashboard.php') ?>">Dashboard</a></li>
+            <li><a href="<?= h($pageBase . 'books.php') ?>">Books</a></li>
+            <li><a href="<?= h($pageBase . 'requests.php') ?>">Requests</a></li>
+            <li><a href="<?= h($pageBase . 'borrowings.php') ?>">Borrowings</a></li>
+            <li><a href="<?= h($pageBase . 'profile.php') ?>">Profile</a></li>
+            <li><a href="<?= h($pageBase . 'settings.php') ?>">Settings</a></li>
+            <?php if ($isAdmin) : ?>
+                <li><a href="<?= h($pageBase . 'members.php') ?>">Members</a></li>
             <?php endif; ?>
             <?php if ($isLoggedIn) : ?>
-                <li><a href="<?= htmlspecialchars($logoutUrl, ENT_QUOTES, 'UTF-8') ?>">Logout</a></li>
+                <li><a href="<?= h($logoutUrl) ?>">Logout</a></li>
             <?php else : ?>
-                <li><a href="<?= htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8') ?>">Login</a></li>
+                <li><a href="<?= h($loginUrl) ?>">Login</a></li>
             <?php endif; ?>
         </ul>
     </nav>
 </header>
+
+<?php if ($flashError !== null || $flashSuccess !== null || $flashInfo !== null) : ?>
+    <div class="container main-content">
+        <?php if ($flashError !== null) : ?>
+            <div class="flash flash-error"><?= h($flashError) ?></div>
+        <?php endif; ?>
+
+        <?php if ($flashSuccess !== null) : ?>
+            <div class="flash flash-success"><?= h($flashSuccess) ?></div>
+        <?php endif; ?>
+
+        <?php if ($flashInfo !== null) : ?>
+            <div class="flash flash-info"><?= h($flashInfo) ?></div>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
