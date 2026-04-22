@@ -34,7 +34,7 @@ return [
         'id' => 4,
         'username' => 'Erdoart',
         'email' => 'erdoart@library.local',
-        'role' => 'admin',
+        'role' => 'member',
         'password' => 'password123',
     ],
     [
