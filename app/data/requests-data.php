@@ -1,9 +1,6 @@
 <?php
 declare(strict_types=1);
 
-/**
- * Sample borrow / hold requests — RequestService will own real logic later.
- */
 return [
     [
         'id' => 1,
@@ -18,5 +15,19 @@ return [
         'book_id' => 3,
         'status' => 'approved',
         'request_date' => '2026-03-18',
+    ],
+    [
+        'id' => 3,
+        'user_id' => 3,
+        'book_id' => 2,
+        'status' => 'rejected',
+        'request_date' => '2026-03-20',
+    ],
+    [
+        'id' => 4,
+        'user_id' => 5,
+        'book_id' => 1,
+        'status' => 'pending',
+        'request_date' => '2026-03-22',
     ],
 ];
