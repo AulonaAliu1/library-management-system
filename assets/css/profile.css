@@ -1,0 +1,66 @@
+.profile-form {
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #f4f6f8;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.profile-form label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.profile-form input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.profile-form input:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.profile-form button {
+    width: 100%;
+    padding: 10px;
+    background: #007bff;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.profile-form button:hover {
+    background: #0056b3;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+p {
+    text-align: center;
+}
+
+/* Messages */
+.invalid-msg {
+    color: red;
+}
+
+.success-msg {
+    color: green;
+}
+body.dark .success-msg {
+    color:#f4f6f8;
+}
+body.dark .invalid-msg {
+    color:#f4f6f8;
+}

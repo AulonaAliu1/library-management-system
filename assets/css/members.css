@@ -1,0 +1,79 @@
+h1 {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.3rem;
+  border: 1px solid #e5e7eb;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.card p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.role-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.role-admin {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.role-user {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+body.dark .card {
+  background: #1e1e1e;
+  border: 1px solid #333;
+}
+
+body.dark .card h3 {
+  color: #ffffff;
+}
+
+body.dark .card p {
+  color: #cbd5e1;
+}
+
+body.dark .role-admin {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+body.dark .role-user {
+  background: #0c4a6e;
+  color: #bae6fd;
+}
