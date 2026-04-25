@@ -30,6 +30,8 @@ $showEditForm = $action === 'show_edit';
 $showUpdateQuantityForm = $action === 'show_update_quantity';
 
 $dataFile = __DIR__ . '/../data/books-data.php';
+$requestsFile = __DIR__ . '/../data/requests-data.php';
+$borrowingsFile = __DIR__ . '/../data/borrowings-data.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
     $booksData = require $dataFile;
@@ -58,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
                 'borrowed_quantity' => 0,
             ];
 
-            $export = "<?php\n\nreturn " . var_export($booksData, true) . ";\n";
+            $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
             file_put_contents($dataFile, $export);
         } else {
             $showAddForm = true;
@@ -78,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
         }
         unset($bookData);
 
-        $export = "<?php\n\nreturn " . var_export($booksData, true) . ";\n";
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
         file_put_contents($dataFile, $export);
     }
 
@@ -95,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
         }
         unset($bookData);
 
-        $export = "<?php\n\nreturn " . var_export($booksData, true) . ";\n";
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
         file_put_contents($dataFile, $export);
     }
 
@@ -109,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
         }
         unset($bookData);
 
-        $export = "<?php\n\nreturn " . var_export($booksData, true) . ";\n";
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
         file_put_contents($dataFile, $export);
     }
 
@@ -118,8 +120,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
             return (int) $bookData['id'] !== $selectedBookId;
         }));
 
-        $export = "<?php\n\nreturn " . var_export($booksData, true) . ";\n";
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
         file_put_contents($dataFile, $export);
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isMember) {
+    $booksData = require $dataFile;
+    $bookId = (int) ($_POST['book_id'] ?? 0);
+    $userId = (int) ($_SESSION['user']['id'] ?? $_SESSION['user_id'] ?? $_SESSION['id'] ?? 0);
+
+    if ($action === 'request_book') {
+        $requestsData = file_exists($requestsFile) ? require $requestsFile : [];
+
+        $ids = array_column($requestsData, 'id');
+        $newId = empty($ids) ? 1 : max($ids) + 1;
+
+        $requestsData[] = [
+            'id' => $newId,
+            'user_id' => $userId,
+            'book_id' => $bookId,
+            'status' => 'pending',
+            'request_date' => date('Y-m-d'),
+        ];
+
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($requestsData, true) . ";\n";
+        file_put_contents($requestsFile, $export);
+    }
+
+    if ($action === 'borrow_book') {
+        $canBorrow = false;
+
+        foreach ($booksData as &$bookData) {
+            if ((int) $bookData['id'] === $bookId && (int) $bookData['available_quantity'] > 0) {
+                $bookData['available_quantity'] = (int) $bookData['available_quantity'] - 1;
+                $bookData['borrowed_quantity'] = (int) $bookData['borrowed_quantity'] + 1;
+                $canBorrow = true;
+                break;
+            }
+        }
+        unset($bookData);
+
+        if ($canBorrow) {
+            $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
+            file_put_contents($dataFile, $export);
+
+            $borrowingsData = file_exists($borrowingsFile) ? require $borrowingsFile : [];
+
+            $ids = array_column($borrowingsData, 'id');
+            $newId = empty($ids) ? 1 : max($ids) + 1;
+
+            $borrowingsData[] = [
+                'id' => $newId,
+                'user_id' => $userId,
+                'book_id' => $bookId,
+                'borrow_date' => date('Y-m-d'),
+                'return_date' => date('Y-m-d', strtotime('+14 days')),
+                'status' => 'active',
+            ];
+
+            $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($borrowingsData, true) . ";\n";
+            file_put_contents($borrowingsFile, $export);
+        }
     }
 }
 
@@ -564,15 +626,20 @@ $borrowedCopies = array_sum(array_map(fn (Book $book): int => $book->getBorrowed
                     <?php if ($isMember): ?>
                         <div class="role-panel">
                             <?php if ($book->isAvailable()): ?>
-                                <a class="btn btn-primary" href="requests.php?book_id=<?= $book->getId() ?>&action=request">
-                                    Request Book
-                                </a>
-                                <p class="text-muted" style="margin-bottom: 0;">
-                                    Placeholder entry point only. Approval logic will be handled in the requests flow.
-                                </p>
+                                <form method="post" class="books-actions">
+                                    <input type="hidden" name="book_id" value="<?= $book->getId() ?>">
+
+                                    <button type="submit" name="action" value="request_book" class="btn btn-primary">
+                                        Request Book
+                                    </button>
+
+                                    <button type="submit" name="action" value="borrow_book" class="btn btn-secondary">
+                                        Borrow Book
+                                    </button>
+                                </form>
                             <?php else: ?>
                                 <p class="text-muted" style="margin: 0;">
-                                    This title is currently unavailable for member requests.
+                                    This title is currently unavailable.
                                 </p>
                             <?php endif; ?>
                         </div>
