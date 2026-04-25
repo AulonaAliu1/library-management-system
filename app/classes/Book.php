@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-
 class Book
 {
     private int $id;
@@ -25,15 +24,15 @@ class Book
         int $availableQuantity,
         int $borrowedQuantity
     ) {
-        $this->id = $id;
-        $this->title = $title;
-        $this->author = $author;
-        $this->category = $category;
-        $this->description = $description;
-        $this->isbn = $isbn;
-        $this->totalQuantity = $totalQuantity;
-        $this->availableQuantity = $availableQuantity;
-        $this->borrowedQuantity = $borrowedQuantity;
+        $this->setId($id);
+        $this->setTitle($title);
+        $this->setAuthor($author);
+        $this->setCategory($category);
+        $this->setDescription($description);
+        $this->setIsbn($isbn);
+        $this->setTotalQuantity($totalQuantity);
+        $this->setAvailableQuantity($availableQuantity);
+        $this->setBorrowedQuantity($borrowedQuantity);
     }
 
     public function getId(): int
@@ -43,7 +42,7 @@ class Book
 
     public function setId(int $id): void
     {
-        $this->id = $id;
+        $this->id = max(0, $id);
     }
 
     public function getTitle(): string
@@ -53,7 +52,7 @@ class Book
 
     public function setTitle(string $title): void
     {
-        $this->title = $title;
+        $this->title = trim($title);
     }
 
     public function getAuthor(): string
@@ -63,7 +62,7 @@ class Book
 
     public function setAuthor(string $author): void
     {
-        $this->author = $author;
+        $this->author = trim($author);
     }
 
     public function getCategory(): string
@@ -73,7 +72,7 @@ class Book
 
     public function setCategory(string $category): void
     {
-        $this->category = $category;
+        $this->category = trim($category);
     }
 
     public function getDescription(): string
@@ -83,7 +82,7 @@ class Book
 
     public function setDescription(string $description): void
     {
-        $this->description = $description;
+        $this->description = trim($description);
     }
 
     public function getIsbn(): string
@@ -93,7 +92,7 @@ class Book
 
     public function setIsbn(string $isbn): void
     {
-        $this->isbn = $isbn;
+        $this->isbn = trim($isbn);
     }
 
     public function getTotalQuantity(): int
@@ -103,7 +102,7 @@ class Book
 
     public function setTotalQuantity(int $totalQuantity): void
     {
-        $this->totalQuantity = $totalQuantity;
+        $this->totalQuantity = max(0, $totalQuantity);
     }
 
     public function getAvailableQuantity(): int
@@ -113,7 +112,7 @@ class Book
 
     public function setAvailableQuantity(int $availableQuantity): void
     {
-        $this->availableQuantity = $availableQuantity;
+        $this->availableQuantity = max(0, $availableQuantity);
     }
 
     public function getBorrowedQuantity(): int
@@ -123,6 +122,11 @@ class Book
 
     public function setBorrowedQuantity(int $borrowedQuantity): void
     {
-        $this->borrowedQuantity = $borrowedQuantity;
+        $this->borrowedQuantity = max(0, $borrowedQuantity);
+    }
+
+    public function isAvailable(): bool
+    {
+        return $this->availableQuantity > 0;
     }
 }
