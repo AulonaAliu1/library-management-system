@@ -1,0 +1,77 @@
+/* DASHBOARD */
+
+/* Grid layout */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* Card design */
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+/* Hover efekt */
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* Title (h3) */
+.card h3 {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Number (p) */
+.card p {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #111827;
+}
+
+/* Section title */
+h2 {
+  margin-top: 1.5rem;
+  color: #374151;
+}
+
+/* Fix për hr */
+hr {
+  margin: 1rem 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* DARK MODE */
+
+body.dark .card {
+  background: #1e1e1e;
+  border: 1px solid #333;
+}
+
+body.dark .card h3 {
+  color: #9ca3af;
+}
+
+body.dark .card p {
+  color: #ffffff;
+}
+
+body.dark h2 {
+  color: #e5e7eb;
+}
+
+body.dark hr {
+  border-top: 1px solid #333;
+}
