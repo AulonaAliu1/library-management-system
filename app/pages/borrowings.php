@@ -19,11 +19,6 @@ $currentUserId = (int) ($currentUser['id'] ?? 0);
 $currentUserRole = strtolower((string) ($currentUser['role'] ?? 'member'));
 $isAdmin = $currentUserRole === 'admin';
 
-$borrowings = $isAdmin
-    ? $requestService->getAllBorrowings()
-    : $requestService->getBorrowingsByUserId($currentUserId);
-
-$borrowingCounts = $requestService->getBorrowingCounts($borrowings);
 $actionMessage = null;
 
 if (
@@ -31,11 +26,19 @@ if (
     $_SERVER['REQUEST_METHOD'] === 'POST' &&
     isset($_POST['borrowing_action'], $_POST['borrowing_id'])
 ) {
-    $actionMessage = $requestService->getBorrowingActionMessage(
-        (string) $_POST['borrowing_action'],
-        (int) $_POST['borrowing_id']
-    );
+    $borrowingId = (int) $_POST['borrowing_id'];
+    $borrowingAction = (string) $_POST['borrowing_action'];
+
+    if ($borrowingAction === 'mark_returned') {
+        $actionMessage = $requestService->markBorrowingReturned($borrowingId);
+    }
 }
+
+$borrowings = $isAdmin
+    ? $requestService->getAllBorrowings()
+    : $requestService->getBorrowingsByUserId($currentUserId);
+
+$borrowingCounts = $requestService->getBorrowingCounts($borrowings);
 
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/navbar.php';
@@ -45,7 +48,7 @@ require_once __DIR__ . '/../includes/navbar.php';
     <h1>Borrowings</h1>
     <p class="text-muted">
         <?php echo $isAdmin
-            ? 'Admin can view all active and returned borrowings. Mark Returned is a placeholder action in Phase I.'
+            ? 'Admin can view all active and returned borrowings and update their status.'
             : 'Here you can view your own borrowings and return dates.'; ?>
     </p>
 
