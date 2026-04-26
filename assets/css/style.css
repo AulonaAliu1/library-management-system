@@ -345,3 +345,36 @@ h1 {
 p {
   font-size: 1rem;
 }
+
+body.dark .book-meta,
+body.dark .book-description,
+body.dark .text-muted,
+body.dark .lead {
+  color: #cbd5e1;
+}
+
+body.dark h1,
+body.dark h2,
+body.dark h3 {
+  color: #f8fafc;
+}
+
+body.dark .books-summary-value,
+body.dark .book-quantities strong {
+  color: #f8fafc;
+}
+
+body.dark .book-quantities {
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+body.dark .book-quantities span {
+  color: #cbd5e1;
+}
+
+body.dark input {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}

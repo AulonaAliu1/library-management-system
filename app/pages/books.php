@@ -10,14 +10,193 @@ require_once __DIR__ . '/../helpers/auth_guard.php';
 require_login();
 
 $pageTitle = 'Books';
+$extraCss = './../../assets/css/books.css';
 
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/navbar.php';
 require_once __DIR__ . '/../services/BookService.php';
 
 $service = new BookService();
+
+$role = current_role() ?? ($_SESSION['role'] ?? 'member');
+$isAdmin = $role === 'admin';
+$isMember = $role === 'member';
+
+$action = $_POST['action'] ?? '';
+$selectedBookId = (int) ($_POST['book_id'] ?? 0);
+
+$showAddForm = $action === 'show_add';
+$showBulkForm = $action === 'show_bulk';
+$showEditForm = $action === 'show_edit';
+$showUpdateQuantityForm = $action === 'show_update_quantity';
+
+$dataFile = __DIR__ . '/../data/books-data.php';
+$requestsFile = __DIR__ . '/../data/requests-data.php';
+$borrowingsFile = __DIR__ . '/../data/borrowings-data.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
+    $booksData = require $dataFile;
+
+    if ($action === 'add_book') {
+        $title = trim((string) ($_POST['title'] ?? ''));
+        $author = trim((string) ($_POST['author'] ?? ''));
+        $category = trim((string) ($_POST['category'] ?? ''));
+        $description = trim((string) ($_POST['description'] ?? ''));
+        $isbn = trim((string) ($_POST['isbn'] ?? ''));
+        $quantity = (int) ($_POST['quantity'] ?? 0);
+
+        if ($title !== '' && $author !== '' && $quantity >= 1) {
+            $ids = array_column($booksData, 'id');
+            $newId = empty($ids) ? 1 : max($ids) + 1;
+
+            $booksData[] = [
+                'id' => $newId,
+                'title' => $title,
+                'author' => $author,
+                'category' => $category,
+                'description' => $description,
+                'isbn' => $isbn,
+                'total_quantity' => $quantity,
+                'available_quantity' => $quantity,
+                'borrowed_quantity' => 0,
+            ];
+
+            $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
+            file_put_contents($dataFile, $export);
+        } else {
+            $showAddForm = true;
+        }
+    }
+
+    if ($action === 'edit_book') {
+        foreach ($booksData as &$bookData) {
+            if ((int) $bookData['id'] === $selectedBookId) {
+                $bookData['title'] = trim((string) ($_POST['title'] ?? $bookData['title']));
+                $bookData['author'] = trim((string) ($_POST['author'] ?? $bookData['author']));
+                $bookData['category'] = trim((string) ($_POST['category'] ?? $bookData['category']));
+                $bookData['description'] = trim((string) ($_POST['description'] ?? $bookData['description']));
+                $bookData['isbn'] = trim((string) ($_POST['isbn'] ?? $bookData['isbn']));
+                break;
+            }
+        }
+        unset($bookData);
+
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
+        file_put_contents($dataFile, $export);
+    }
+
+    if ($action === 'update_quantity') {
+        $newQuantity = (int) ($_POST['quantity'] ?? 0);
+
+        foreach ($booksData as &$bookData) {
+            if ((int) $bookData['id'] === $selectedBookId) {
+                $borrowed = (int) ($bookData['borrowed_quantity'] ?? 0);
+                $bookData['total_quantity'] = $newQuantity;
+                $bookData['available_quantity'] = max(0, $newQuantity - $borrowed);
+                break;
+            }
+        }
+        unset($bookData);
+
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
+        file_put_contents($dataFile, $export);
+    }
+
+    if ($action === 'bulk_update') {
+        $newQuantity = (int) ($_POST['quantity'] ?? 0);
+
+        foreach ($booksData as &$bookData) {
+            $borrowed = (int) ($bookData['borrowed_quantity'] ?? 0);
+            $bookData['total_quantity'] = $newQuantity;
+            $bookData['available_quantity'] = max(0, $newQuantity - $borrowed);
+        }
+        unset($bookData);
+
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
+        file_put_contents($dataFile, $export);
+    }
+
+    if ($action === 'delete_book') {
+        $booksData = array_values(array_filter($booksData, function (array $bookData) use ($selectedBookId): bool {
+            return (int) $bookData['id'] !== $selectedBookId;
+        }));
+
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
+        file_put_contents($dataFile, $export);
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isMember) {
+    $booksData = require $dataFile;
+    $bookId = (int) ($_POST['book_id'] ?? 0);
+    $userId = (int) ($_SESSION['user']['id'] ?? $_SESSION['user_id'] ?? $_SESSION['id'] ?? 0);
+
+    if ($action === 'request_book') {
+        $requestsData = file_exists($requestsFile) ? require $requestsFile : [];
+
+        $ids = array_column($requestsData, 'id');
+        $newId = empty($ids) ? 1 : max($ids) + 1;
+
+        $requestsData[] = [
+            'id' => $newId,
+            'user_id' => $userId,
+            'book_id' => $bookId,
+            'status' => 'pending',
+            'request_date' => date('Y-m-d'),
+        ];
+
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($requestsData, true) . ";\n";
+        file_put_contents($requestsFile, $export);
+    }
+
+    if ($action === 'borrow_book') {
+        $canBorrow = false;
+
+        foreach ($booksData as &$bookData) {
+            if ((int) $bookData['id'] === $bookId && (int) $bookData['available_quantity'] > 0) {
+                $bookData['available_quantity'] = (int) $bookData['available_quantity'] - 1;
+                $bookData['borrowed_quantity'] = (int) $bookData['borrowed_quantity'] + 1;
+                $canBorrow = true;
+                break;
+            }
+        }
+        unset($bookData);
+
+        if ($canBorrow) {
+            $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($booksData, true) . ";\n";
+            file_put_contents($dataFile, $export);
+
+            $borrowingsData = file_exists($borrowingsFile) ? require $borrowingsFile : [];
+
+            $ids = array_column($borrowingsData, 'id');
+            $newId = empty($ids) ? 1 : max($ids) + 1;
+
+            $borrowingsData[] = [
+                'id' => $newId,
+                'user_id' => $userId,
+                'book_id' => $bookId,
+                'borrow_date' => date('Y-m-d'),
+                'return_date' => date('Y-m-d', strtotime('+14 days')),
+                'status' => 'active',
+            ];
+
+            $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($borrowingsData, true) . ";\n";
+            file_put_contents($borrowingsFile, $export);
+        }
+    }
+}
+
 $allBooks = $service->getAllBooks();
 $categories = $service->getCategories($allBooks);
+
+$selectedBook = null;
+
+foreach ($allBooks as $book) {
+    if ($book->getId() === $selectedBookId) {
+        $selectedBook = $book;
+        break;
+    }
+}
 
 $search = trim((string) ($_GET['search'] ?? ''));
 $category = trim((string) ($_GET['category'] ?? ''));
@@ -27,10 +206,6 @@ $books = $service->searchBooks($allBooks, $search);
 $books = $service->filterByCategory($books, $category);
 $books = $service->sortBooks($books, $sort);
 
-$role = current_role() ?? ($_SESSION['role'] ?? 'member');
-$isAdmin = $role === 'admin';
-$isMember = $role === 'member';
-
 $totalBooks = count($allBooks);
 $visibleBooks = count($books);
 $availableCopies = array_sum(array_map(fn (Book $book): int => $book->getAvailableQuantity(), $allBooks));
@@ -38,150 +213,9 @@ $borrowedCopies = array_sum(array_map(fn (Book $book): int => $book->getBorrowed
 ?>
 
 <main class="container main-content">
-    <style>
-        .books-hero {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .books-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 0.85rem;
-            margin: 1.25rem 0 1.5rem;
-        }
-
-        .books-summary .card {
-            padding: 1rem;
-        }
-
-        .books-summary-value {
-            display: block;
-            font-size: 1.45rem;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .books-filter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            align-items: end;
-        }
-
-        .books-toolbar {
-            margin-bottom: 1.5rem;
-        }
-
-        .books-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.65rem;
-            margin-top: 1rem;
-        }
-
-        .books-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1rem;
-        }
-
-        .book-card {
-            display: flex;
-            flex-direction: column;
-            gap: 0.9rem;
-        }
-
-        .book-card-header {
-            display: flex;
-            justify-content: space-between;
-            gap: 1rem;
-            align-items: flex-start;
-        }
-
-        .book-card h2 {
-            font-size: 1.2rem;
-            margin-bottom: 0.35rem;
-        }
-
-        .book-meta {
-            margin: 0;
-            color: #475569;
-            font-size: 0.95rem;
-        }
-
-        .book-description {
-            margin: 0;
-            color: #334155;
-        }
-
-        .book-quantities {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 0.75rem;
-            padding: 0.85rem;
-            border-radius: 8px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-        }
-
-        .book-quantities span {
-            display: block;
-            font-size: 0.8rem;
-            color: #64748b;
-        }
-
-        .book-quantities strong {
-            display: block;
-            font-size: 1.1rem;
-            color: #0f172a;
-        }
-
-        .books-empty {
-            text-align: center;
-            padding: 2rem 1rem;
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #0f172a;
-            border-color: #cbd5e1;
-        }
-
-        .btn-secondary:hover {
-            text-decoration: none;
-            background: #cbd5e1;
-            color: #0f172a;
-        }
-
-        .btn-danger {
-            background: #fee2e2;
-            color: #991b1b;
-            border-color: #fecaca;
-        }
-
-        .btn-danger:hover {
-            text-decoration: none;
-            background: #fecaca;
-            color: #7f1d1d;
-        }
-
-        .role-panel {
-            border-top: 1px solid #e2e8f0;
-            padding-top: 0.85rem;
-        }
-    </style>
-
     <section class="books-hero">
         <div>
             <h1>Books</h1>
-            <p class="lead">
-                Browse the library catalog, explore availability, and use the role-specific actions below.
-            </p>
         </div>
         <span class="badge <?= $isAdmin ? 'badge-warning' : 'badge-neutral' ?>">
             <?= $isAdmin ? 'Admin View' : 'Member View' ?>
@@ -256,14 +290,151 @@ $borrowedCopies = array_sum(array_map(fn (Book $book): int => $book->getBorrowed
     <?php if ($isAdmin): ?>
         <section class="card" style="margin-bottom: 1.5rem;">
             <h2 style="margin-bottom: 0.5rem;">Admin Tools</h2>
-            <p class="text-muted" style="margin-top: 0;">
-                Placeholder controls for catalog management are shown here. CRUD logic is intentionally not implemented in this task.
-            </p>
-            <div class="books-actions">
-                <button type="button" class="btn btn-primary">Add New Book</button>
-                <button type="button" class="btn btn-secondary">Bulk Update Quantity</button>
-            </div>
+
+            <form method="post" class="books-actions">
+                <button type="submit" name="action" value="show_add" class="btn btn-primary">
+                    Add New Book
+                </button>
+
+                <button type="submit" name="action" value="show_bulk" class="btn btn-secondary">
+                    Bulk Update Quantity
+                </button>
+            </form>
         </section>
+
+        <?php if ($showAddForm): ?>
+            <section class="card" style="margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0.5rem;">Add New Book</h2>
+
+                <form method="post" class="form-stack">
+                    <input type="hidden" name="action" value="add_book">
+
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input id="title" type="text" name="title" placeholder="Book title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="author">Author</label>
+                        <input id="author" type="text" name="author" placeholder="Book author" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category_new">Category</label>
+                        <input id="category_new" type="text" name="category" placeholder="Book category">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" placeholder="Book description"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="isbn">ISBN</label>
+                        <input id="isbn" type="text" name="isbn" placeholder="ISBN">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quantity">Total Quantity</label>
+                        <input id="quantity" type="number" name="quantity" min="1" placeholder="Quantity" required>
+                    </div>
+
+                    <div class="books-actions">
+                        <button type="submit" class="btn btn-primary">Save Book</button>
+                        <a href="books.php" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($showBulkForm): ?>
+            <section class="card" style="margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0.5rem;">Bulk Update Quantity</h2>
+
+                <form method="post" class="form-stack">
+                    <input type="hidden" name="action" value="bulk_update">
+
+                    <div class="form-group">
+                        <label for="bulk_quantity">New Quantity</label>
+                        <input id="bulk_quantity" type="number" name="quantity" min="0" placeholder="New quantity" required>
+                    </div>
+
+                    <div class="books-actions">
+                        <button type="submit" class="btn btn-secondary">Update Quantities</button>
+                        <a href="books.php" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($showEditForm && $selectedBook !== null): ?>
+            <section class="card" style="margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0.5rem;">Edit Book</h2>
+
+                <form method="post" class="form-stack">
+                    <input type="hidden" name="action" value="edit_book">
+                    <input type="hidden" name="book_id" value="<?= $selectedBook->getId() ?>">
+
+                    <div class="form-group">
+                        <label for="edit_title">Title</label>
+                        <input id="edit_title" type="text" name="title" value="<?= h($selectedBook->getTitle()) ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_author">Author</label>
+                        <input id="edit_author" type="text" name="author" value="<?= h($selectedBook->getAuthor()) ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_category">Category</label>
+                        <input id="edit_category" type="text" name="category" value="<?= h($selectedBook->getCategory()) ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_description">Description</label>
+                        <textarea id="edit_description" name="description"><?= h($selectedBook->getDescription()) ?></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_isbn">ISBN</label>
+                        <input id="edit_isbn" type="text" name="isbn" value="<?= h($selectedBook->getIsbn()) ?>">
+                    </div>
+
+                    <div class="books-actions">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="books.php" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($showUpdateQuantityForm && $selectedBook !== null): ?>
+            <section class="card" style="margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0.5rem;">Update Quantity</h2>
+
+                <form method="post" class="form-stack">
+                    <input type="hidden" name="action" value="update_quantity">
+                    <input type="hidden" name="book_id" value="<?= $selectedBook->getId() ?>">
+
+                    <div class="form-group">
+                        <label for="single_quantity">New Quantity</label>
+                        <input
+                            id="single_quantity"
+                            type="number"
+                            name="quantity"
+                            min="0"
+                            value="<?= $selectedBook->getTotalQuantity() ?>"
+                            required
+                        >
+                    </div>
+
+                    <div class="books-actions">
+                        <button type="submit" class="btn btn-secondary">Update Quantity</button>
+                        <a href="books.php" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </section>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($books === []): ?>
@@ -312,15 +483,20 @@ $borrowedCopies = array_sum(array_map(fn (Book $book): int => $book->getBorrowed
                     <?php if ($isMember): ?>
                         <div class="role-panel">
                             <?php if ($book->isAvailable()): ?>
-                                <a class="btn btn-primary" href="requests.php?book_id=<?= $book->getId() ?>&action=request">
-                                    Request Book
-                                </a>
-                                <p class="text-muted" style="margin-bottom: 0;">
-                                    Placeholder entry point only. Approval logic will be handled in the requests flow.
-                                </p>
+                                <form method="post" class="books-actions">
+                                    <input type="hidden" name="book_id" value="<?= $book->getId() ?>">
+
+                                    <button type="submit" name="action" value="request_book" class="btn btn-primary">
+                                        Request Book
+                                    </button>
+
+                                    <button type="submit" name="action" value="borrow_book" class="btn btn-secondary">
+                                        Borrow Book
+                                    </button>
+                                </form>
                             <?php else: ?>
                                 <p class="text-muted" style="margin: 0;">
-                                    This title is currently unavailable for member requests.
+                                    This title is currently unavailable.
                                 </p>
                             <?php endif; ?>
                         </div>
@@ -328,14 +504,21 @@ $borrowedCopies = array_sum(array_map(fn (Book $book): int => $book->getBorrowed
 
                     <?php if ($isAdmin): ?>
                         <div class="role-panel">
-                            <div class="books-actions">
-                                <button type="button" class="btn btn-primary">Edit</button>
-                                <button type="button" class="btn btn-secondary">Update Quantity</button>
-                                <button type="button" class="btn btn-danger">Delete</button>
-                            </div>
-                            <p class="text-muted" style="margin-bottom: 0;">
-                                Admin action buttons are placeholders for future catalog management workflows.
-                            </p>
+                            <form method="post" class="books-actions">
+                                <input type="hidden" name="book_id" value="<?= $book->getId() ?>">
+
+                                <button type="submit" name="action" value="show_edit" class="btn btn-primary">
+                                    Edit
+                                </button>
+
+                                <button type="submit" name="action" value="show_update_quantity" class="btn btn-secondary">
+                                    Update Quantity
+                                </button>
+
+                                <button type="submit" name="action" value="delete_book" class="btn btn-danger">
+                                    Delete
+                                </button>
+                            </form>
                         </div>
                     <?php endif; ?>
                 </article>
