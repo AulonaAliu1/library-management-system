@@ -14,6 +14,17 @@ else{
     $fontSize='normal';
 
 }
+$allowedThemes = ['light', 'dark'];
+$allowedFontSizes = ['normal', 'large'];
+
+if (!in_array($theme, $allowedThemes, true)) {
+    $theme = 'light';
+}
+
+if (!in_array($fontSize, $allowedFontSizes, true)) {
+    $fontSize = 'normal';
+}
+
 if (!defined('LMS_ENTRY')) {
     define('LMS_ENTRY', 'pages');
 }
@@ -22,7 +33,7 @@ $pageTitle = $pageTitle ?? 'Library Management System';
 $assetsCss = $assetsCss ?? (LMS_ENTRY === 'public' ? '../assets/css/style.css' : '../../assets/css/style.css');
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="<?= htmlspecialchars($theme . ' ' . $fontSize, ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,5 +43,5 @@ $assetsCss = $assetsCss ?? (LMS_ENTRY === 'public' ? '../assets/css/style.css' :
 <link rel="stylesheet" href="<?= htmlspecialchars($extraCss) ?>">
 <?php endif; ?>
 </head>
-<body class="<?= $theme ?> <?= $fontSize ?>">
+<body class="<?= htmlspecialchars($theme . ' ' . $fontSize, ENT_QUOTES, 'UTF-8') ?>">
 <div class="page-wrap">

@@ -70,14 +70,14 @@ if ($fontSize == 'small') {
     
     <form method="POST" class="settings-form">
         <label>Theme: </label><br><br>
-    <select name="theme">
+    <select name="theme" onchange="this.form.submit()">
     <option value="light" <?php if($theme == 'light'){ echo 'selected'; } ?>>Light</option>
     <option value="dark" <?php if($theme == 'dark'){ echo 'selected'; } ?>>Dark</option>
     </select>
         <br><br>
        <label>Font Size: </label> <br><br>
 
-<select name="font_size">
+<select name="font_size" onchange="this.form.submit()">
     <option value="normal" <?php echo $selectedNormal; ?>>Normal</option>
     <option value="large" <?php echo $selectedLarge; ?>>Large</option>
 </select>
