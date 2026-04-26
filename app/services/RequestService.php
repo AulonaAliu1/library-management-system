@@ -1,14 +1,32 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Requests / borrowings coordination for Phase I dummy data.
+ */
 class RequestService
 {
+    public function __construct()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (!isset($_SESSION['requests_data'])) {
+            $_SESSION['requests_data'] = require __DIR__ . '/../data/requests-data.php';
+        }
+
+        if (!isset($_SESSION['borrowings_data'])) {
+            $_SESSION['borrowings_data'] = require __DIR__ . '/../data/borrowings-data.php';
+        }
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
     public function getAllRequests(): array
     {
-        $requests = require __DIR__ . '/../data/requests-data.php';
+        $requests = $_SESSION['requests_data'] ?? [];
         $requests = $this->sortByDateDescending($requests, 'request_date');
 
         return $this->attachRequestDisplayData($requests);
@@ -30,7 +48,7 @@ class RequestService
      */
     public function getAllBorrowings(): array
     {
-        $borrowings = require __DIR__ . '/../data/borrowings-data.php';
+        $borrowings = $_SESSION['borrowings_data'] ?? [];
         $borrowings = $this->sortByDateDescending($borrowings, 'borrow_date');
 
         return $this->attachBorrowingDisplayData($borrowings);
@@ -111,26 +129,52 @@ class RequestService
         return date('d M Y', $timestamp);
     }
 
-    public function getRequestActionMessage(string $action, int $requestId): string
+    public function approveRequest(int $requestId): string
     {
-        switch ($action) {
-            case 'approve':
-                return 'Approve is a Phase I placeholder action only for request #' . $requestId . '.';
-            case 'reject':
-                return 'Reject is a Phase I placeholder action only for request #' . $requestId . '.';
-            default:
-                return 'Unknown request action.';
+        foreach ($_SESSION['requests_data'] as &$request) {
+            if ((int) $request['id'] === $requestId) {
+                $request['status'] = 'approved';
+                unset($request);
+
+                return 'Request #' . $requestId . ' approved successfully.';
+            }
         }
+
+        unset($request);
+
+        return 'Request not found.';
     }
 
-    public function getBorrowingActionMessage(string $action, int $borrowingId): string
+    public function rejectRequest(int $requestId): string
     {
-        switch ($action) {
-            case 'mark_returned':
-                return 'Mark Returned is a Phase I placeholder action only for borrowing #' . $borrowingId . '.';
-            default:
-                return 'Unknown borrowing action.';
+        foreach ($_SESSION['requests_data'] as &$request) {
+            if ((int) $request['id'] === $requestId) {
+                $request['status'] = 'rejected';
+                unset($request);
+
+                return 'Request #' . $requestId . ' rejected successfully.';
+            }
         }
+
+        unset($request);
+
+        return 'Request not found.';
+    }
+
+    public function markBorrowingReturned(int $borrowingId): string
+    {
+        foreach ($_SESSION['borrowings_data'] as &$borrowing) {
+            if ((int) $borrowing['id'] === $borrowingId) {
+                $borrowing['status'] = 'returned';
+                unset($borrowing);
+
+                return 'Borrowing #' . $borrowingId . ' marked as returned successfully.';
+            }
+        }
+
+        unset($borrowing);
+
+        return 'Borrowing not found.';
     }
 
     /**
