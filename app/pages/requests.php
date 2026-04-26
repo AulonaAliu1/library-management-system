@@ -19,11 +19,6 @@ $currentUserId = (int) ($currentUser['id'] ?? 0);
 $currentUserRole = strtolower((string) ($currentUser['role'] ?? 'member'));
 $isAdmin = $currentUserRole === 'admin';
 
-$requests = $isAdmin
-    ? $requestService->getAllRequests()
-    : $requestService->getRequestsByUserId($currentUserId);
-
-$requestCounts = $requestService->getRequestCounts($requests);
 $actionMessage = null;
 
 if (
@@ -31,11 +26,21 @@ if (
     $_SERVER['REQUEST_METHOD'] === 'POST' &&
     isset($_POST['request_action'], $_POST['request_id'])
 ) {
-    $actionMessage = $requestService->getRequestActionMessage(
-        (string) $_POST['request_action'],
-        (int) $_POST['request_id']
-    );
+    $requestId = (int) $_POST['request_id'];
+    $requestAction = (string) $_POST['request_action'];
+
+    if ($requestAction === 'approve') {
+        $actionMessage = $requestService->approveRequest($requestId);
+    } elseif ($requestAction === 'reject') {
+        $actionMessage = $requestService->rejectRequest($requestId);
+    }
 }
+
+$requests = $isAdmin
+    ? $requestService->getAllRequests()
+    : $requestService->getRequestsByUserId($currentUserId);
+
+$requestCounts = $requestService->getRequestCounts($requests);
 
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/navbar.php';
@@ -45,7 +50,7 @@ require_once __DIR__ . '/../includes/navbar.php';
     <h1>Requests</h1>
     <p class="text-muted">
         <?php echo $isAdmin
-            ? 'Admin can view all borrow and hold requests. Approve and reject are placeholder actions in Phase I.'
+            ? 'Admin can view all borrow and hold requests and update their status.'
             : 'Here you can view your own borrow and hold requests.'; ?>
     </p>
 
