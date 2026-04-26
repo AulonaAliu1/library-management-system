@@ -1,14 +1,30 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Requests / borrowings coordination for Phase I dummy data.
+ */
 class RequestService
 {
+    private string $requestsFile;
+    private string $borrowingsFile;
+    private string $booksFile;
+    private string $usersFile;
+
+    public function __construct()
+    {
+        $this->requestsFile = __DIR__ . '/../data/requests-data.php';
+        $this->borrowingsFile = __DIR__ . '/../data/borrowings-data.php';
+        $this->booksFile = __DIR__ . '/../data/books-data.php';
+        $this->usersFile = __DIR__ . '/../data/users-data.php';
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
     public function getAllRequests(): array
     {
-        $requests = require __DIR__ . '/../data/requests-data.php';
+        $requests = $this->readDataFile($this->requestsFile);
         $requests = $this->sortByDateDescending($requests, 'request_date');
 
         return $this->attachRequestDisplayData($requests);
@@ -30,7 +46,7 @@ class RequestService
      */
     public function getAllBorrowings(): array
     {
-        $borrowings = require __DIR__ . '/../data/borrowings-data.php';
+        $borrowings = $this->readDataFile($this->borrowingsFile);
         $borrowings = $this->sortByDateDescending($borrowings, 'borrow_date');
 
         return $this->attachBorrowingDisplayData($borrowings);
@@ -111,26 +127,132 @@ class RequestService
         return date('d M Y', $timestamp);
     }
 
-    public function getRequestActionMessage(string $action, int $requestId): string
+    public function approveRequest(int $requestId): string
     {
-        switch ($action) {
-            case 'approve':
-                return 'Approve is a Phase I placeholder action only for request #' . $requestId . '.';
-            case 'reject':
-                return 'Reject is a Phase I placeholder action only for request #' . $requestId . '.';
-            default:
-                return 'Unknown request action.';
+        $requests = $this->readDataFile($this->requestsFile);
+        $borrowings = $this->readDataFile($this->borrowingsFile);
+        $books = $this->readDataFile($this->booksFile);
+
+        $targetRequest = null;
+
+        foreach ($requests as &$request) {
+            if ((int) $request['id'] !== $requestId) {
+                continue;
+            }
+
+            if ((string) $request['status'] !== 'pending') {
+                unset($request);
+                return 'This request has already been processed.';
+            }
+
+            $bookIndex = $this->findBookIndex($books, (int) $request['book_id']);
+
+            if ($bookIndex === null) {
+                unset($request);
+                return 'Book not found.';
+            }
+
+            $availableQuantity = (int) ($books[$bookIndex]['available_quantity'] ?? $books[$bookIndex]['availableQuantity'] ?? 0);
+
+            if ($availableQuantity <= 0) {
+                unset($request);
+                return 'This book is currently unavailable.';
+            }
+
+            $request['status'] = 'approved';
+            $targetRequest = $request;
+
+            $books[$bookIndex]['available_quantity'] = $availableQuantity - 1;
+            $books[$bookIndex]['borrowed_quantity'] = (int) ($books[$bookIndex]['borrowed_quantity'] ?? $books[$bookIndex]['borrowedQuantity'] ?? 0) + 1;
+
+            break;
         }
+        unset($request);
+
+        if ($targetRequest === null) {
+            return 'Request not found.';
+        }
+
+        $ids = array_column($borrowings, 'id');
+        $newBorrowingId = empty($ids) ? 1 : max($ids) + 1;
+
+        $borrowings[] = [
+            'id' => $newBorrowingId,
+            'user_id' => (int) $targetRequest['user_id'],
+            'book_id' => (int) $targetRequest['book_id'],
+            'borrow_date' => date('Y-m-d'),
+            'return_date' => date('Y-m-d', strtotime('+14 days')),
+            'status' => 'active',
+        ];
+
+        $this->writeDataFile($this->requestsFile, $requests);
+        $this->writeDataFile($this->borrowingsFile, $borrowings);
+        $this->writeDataFile($this->booksFile, $books);
+
+        return 'Request #' . $requestId . ' approved successfully.';
     }
 
-    public function getBorrowingActionMessage(string $action, int $borrowingId): string
+    public function rejectRequest(int $requestId): string
     {
-        switch ($action) {
-            case 'mark_returned':
-                return 'Mark Returned is a Phase I placeholder action only for borrowing #' . $borrowingId . '.';
-            default:
-                return 'Unknown borrowing action.';
+        $requests = $this->readDataFile($this->requestsFile);
+
+        foreach ($requests as &$request) {
+            if ((int) $request['id'] !== $requestId) {
+                continue;
+            }
+
+            if ((string) $request['status'] !== 'pending') {
+                unset($request);
+                return 'This request has already been processed.';
+            }
+
+            $request['status'] = 'rejected';
+            $this->writeDataFile($this->requestsFile, $requests);
+            unset($request);
+
+            return 'Request #' . $requestId . ' rejected successfully.';
         }
+        unset($request);
+
+        return 'Request not found.';
+    }
+
+    public function markBorrowingReturned(int $borrowingId): string
+    {
+        $borrowings = $this->readDataFile($this->borrowingsFile);
+        $books = $this->readDataFile($this->booksFile);
+
+        foreach ($borrowings as &$borrowing) {
+            if ((int) $borrowing['id'] !== $borrowingId) {
+                continue;
+            }
+
+            if ((string) $borrowing['status'] !== 'active') {
+                unset($borrowing);
+                return 'This borrowing is already returned.';
+            }
+
+            $borrowing['status'] = 'returned';
+
+            $bookIndex = $this->findBookIndex($books, (int) $borrowing['book_id']);
+
+            if ($bookIndex !== null) {
+                $books[$bookIndex]['available_quantity'] = (int) ($books[$bookIndex]['available_quantity'] ?? $books[$bookIndex]['availableQuantity'] ?? 0) + 1;
+                $books[$bookIndex]['borrowed_quantity'] = max(
+                    0,
+                    (int) ($books[$bookIndex]['borrowed_quantity'] ?? $books[$bookIndex]['borrowedQuantity'] ?? 0) - 1
+                );
+            }
+
+            $this->writeDataFile($this->borrowingsFile, $borrowings);
+            $this->writeDataFile($this->booksFile, $books);
+            unset($borrowing);
+
+            return 'Borrowing #' . $borrowingId . ' marked as returned successfully.';
+        }
+        unset($borrowing);
+
+        return 'Borrowing not found.';
     }
 
     /**
@@ -189,13 +311,50 @@ class RequestService
         return $items;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function readDataFile(string $filePath): array
+    {
+        if (!file_exists($filePath)) {
+            return [];
+        }
+
+        $data = require $filePath;
+
+        return is_array($data) ? $data : [];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $data
+     */
+    private function writeDataFile(string $filePath, array $data): void
+    {
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($data, true) . ";\n";
+        file_put_contents($filePath, $export);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $books
+     */
+    private function findBookIndex(array $books, int $bookId): ?int
+    {
+        foreach ($books as $index => $book) {
+            if ((int) ($book['id'] ?? 0) === $bookId) {
+                return $index;
+            }
+        }
+
+        return null;
+    }
+
     private function getUserNameById(int $userId): string
     {
-        $users = require __DIR__ . '/../data/users-data.php';
+        $users = $this->readDataFile($this->usersFile);
 
         foreach ($users as $user) {
-            if ((int) $user['id'] === $userId) {
-                return (string) $user['name'];
+            if ((int) ($user['id'] ?? 0) === $userId) {
+                return (string) ($user['name'] ?? 'Unknown User');
             }
         }
 
@@ -204,11 +363,11 @@ class RequestService
 
     private function getBookTitleById(int $bookId): string
     {
-        $books = require __DIR__ . '/../data/books-data.php';
+        $books = $this->readDataFile($this->booksFile);
 
         foreach ($books as $book) {
-            if ((int) $book['id'] === $bookId) {
-                return (string) $book['title'];
+            if ((int) ($book['id'] ?? 0) === $bookId) {
+                return (string) ($book['title'] ?? 'Unknown Book');
             }
         }
 
