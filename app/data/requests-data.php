@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Sample borrow / hold requests — Phase I dummy data only.
+ */
 return [
     [
         'id' => 1,
