@@ -216,9 +216,6 @@ $borrowedCopies = array_sum(array_map(fn (Book $book): int => $book->getBorrowed
     <section class="books-hero">
         <div>
             <h1>Books</h1>
-            <p class="lead">
-                Browse the library catalog, explore availability, and use the role-specific actions below.
-            </p>
         </div>
         <span class="badge <?= $isAdmin ? 'badge-warning' : 'badge-neutral' ?>">
             <?= $isAdmin ? 'Admin View' : 'Member View' ?>
@@ -293,9 +290,6 @@ $borrowedCopies = array_sum(array_map(fn (Book $book): int => $book->getBorrowed
     <?php if ($isAdmin): ?>
         <section class="card" style="margin-bottom: 1.5rem;">
             <h2 style="margin-bottom: 0.5rem;">Admin Tools</h2>
-            <p class="text-muted" style="margin-top: 0;">
-                Admin can add, edit, update quantity, and delete books.
-            </p>
 
             <form method="post" class="books-actions">
                 <button type="submit" name="action" value="show_add" class="btn btn-primary">
