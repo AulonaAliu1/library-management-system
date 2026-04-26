@@ -90,7 +90,7 @@ if ($user['role'] == 'admin') {
 
 } else {
 
-    $myRequests = $requestService->getRequestsByUserId($user['username']);
+$myRequests = $requestService->getRequestsByUserId((int)$user['id']);
 
     $borrowings = $requestService->getAllBorrowings();
     $myBorrowings = [];
