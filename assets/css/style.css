@@ -22,6 +22,24 @@ body {
   background: #f4f6f8;
 }
 
+html {
+  background: #f4f6f8;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html.normal {
+  font-size: 100%;
+}
+
+html.large {
+  font-size: 125%;
+}
+
+
 h1,
 h2,
 h3 {
@@ -289,11 +307,31 @@ a:hover {
 body.dark {
   background: #121212;
   color: #ffffff;
+  color-scheme: dark;
+}
+
+html.dark {
+  background: #121212;
+}
+
+html.dark body {
+  background: #121212;
+  color: #ffffff;
+}
+
+body.dark .page-wrap,
+body.dark .main-content,
+body.dark main {
+  background: #121212;
 }
 
 body.dark .site-header {
   background: #1e1e1e;
   border-bottom: 1px solid #333;
+}
+
+body.dark .navbar-brand {
+  color: #f8fafc;
 }
 
 body.dark .navbar-links a {
@@ -307,13 +345,58 @@ body.dark .navbar-links a:hover {
 body.dark .card {
   background: #1e1e1e;
   color: white;
+  border-color: #333;
+}
+
+body.dark .settings-form,
+body.dark .profile-form {
+  background: #1e1e1e;
+  color: #f8fafc;
+  border: 1px solid #333;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+}
+
+body.dark .role-panel {
+  border-top-color: #334155;
+}
+
+body.dark .site-footer {
+  background: #1e1e1e;
+  border-top-color: #333;
+}
+
+body.dark .footer-text {
+  color: #cbd5e1;
 }
 
 body.dark select,
+body.dark input,
 body.dark textarea {
   background: #2a2a2a;
   color: white;
   border: 1px solid #444;
+}
+
+body.dark .btn-secondary {
+  background: #334155;
+  color: #f8fafc;
+  border-color: #475569;
+}
+
+body.dark .btn-secondary:hover {
+  background: #475569;
+  color: #f8fafc;
+}
+
+body.dark .btn-danger {
+  background: #7f1d1d;
+  color: #fee2e2;
+  border-color: #991b1b;
+}
+
+body.dark .btn-danger:hover {
+  background: #991b1b;
+  color: #ffffff;
 }
 
 body.dark .data-table {
@@ -324,20 +407,16 @@ body.dark .data-table {
 body.dark .data-table th {
   background: #2a2a2a;
 }
+body.dark .data-table td {
+  border-bottom-color: #333;
+}
 body.dark .profile-form label {
-  color: #000;
+  color: #f8fafc;
 }
 body.dark .settings-form label {
-  color: #000;
+  color: #f8fafc;
 }
 
-body.normal * {
-  font-size: 16px !important;
-}
-
-body.large * {
-  font-size: 22px !important;
-}
 h1 {
   font-size: 2rem;
 }

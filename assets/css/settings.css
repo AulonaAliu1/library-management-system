@@ -34,9 +34,15 @@
 }
 
 body.dark .settings-form select {
-  background: white;
-  color: black;
+  background: #2a2a2a;
+  color: #ffffff;
   border: 1px solid #444;
+}
+
+body.dark .settings-form {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
 }
 
 body.dark .settings-form button {
