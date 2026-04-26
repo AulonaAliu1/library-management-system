@@ -6,19 +6,17 @@ declare(strict_types=1);
  */
 class RequestService
 {
+    private string $requestsFile;
+    private string $borrowingsFile;
+    private string $booksFile;
+    private string $usersFile;
+
     public function __construct()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        if (!isset($_SESSION['requests_data'])) {
-            $_SESSION['requests_data'] = require __DIR__ . '/../data/requests-data.php';
-        }
-
-        if (!isset($_SESSION['borrowings_data'])) {
-            $_SESSION['borrowings_data'] = require __DIR__ . '/../data/borrowings-data.php';
-        }
+        $this->requestsFile = __DIR__ . '/../data/requests-data.php';
+        $this->borrowingsFile = __DIR__ . '/../data/borrowings-data.php';
+        $this->booksFile = __DIR__ . '/../data/books-data.php';
+        $this->usersFile = __DIR__ . '/../data/users-data.php';
     }
 
     /**
@@ -26,7 +24,7 @@ class RequestService
      */
     public function getAllRequests(): array
     {
-        $requests = $_SESSION['requests_data'] ?? [];
+        $requests = $this->readDataFile($this->requestsFile);
         $requests = $this->sortByDateDescending($requests, 'request_date');
 
         return $this->attachRequestDisplayData($requests);
@@ -48,7 +46,7 @@ class RequestService
      */
     public function getAllBorrowings(): array
     {
-        $borrowings = $_SESSION['borrowings_data'] ?? [];
+        $borrowings = $this->readDataFile($this->borrowingsFile);
         $borrowings = $this->sortByDateDescending($borrowings, 'borrow_date');
 
         return $this->attachBorrowingDisplayData($borrowings);
@@ -131,31 +129,89 @@ class RequestService
 
     public function approveRequest(int $requestId): string
     {
-        foreach ($_SESSION['requests_data'] as &$request) {
-            if ((int) $request['id'] === $requestId) {
-                $request['status'] = 'approved';
-                unset($request);
+        $requests = $this->readDataFile($this->requestsFile);
+        $borrowings = $this->readDataFile($this->borrowingsFile);
+        $books = $this->readDataFile($this->booksFile);
 
-                return 'Request #' . $requestId . ' approved successfully.';
+        $targetRequest = null;
+
+        foreach ($requests as &$request) {
+            if ((int) $request['id'] !== $requestId) {
+                continue;
             }
-        }
 
+            if ((string) $request['status'] !== 'pending') {
+                unset($request);
+                return 'This request has already been processed.';
+            }
+
+            $bookIndex = $this->findBookIndex($books, (int) $request['book_id']);
+
+            if ($bookIndex === null) {
+                unset($request);
+                return 'Book not found.';
+            }
+
+            $availableQuantity = (int) ($books[$bookIndex]['available_quantity'] ?? $books[$bookIndex]['availableQuantity'] ?? 0);
+
+            if ($availableQuantity <= 0) {
+                unset($request);
+                return 'This book is currently unavailable.';
+            }
+
+            $request['status'] = 'approved';
+            $targetRequest = $request;
+
+            $books[$bookIndex]['available_quantity'] = $availableQuantity - 1;
+            $books[$bookIndex]['borrowed_quantity'] = (int) ($books[$bookIndex]['borrowed_quantity'] ?? $books[$bookIndex]['borrowedQuantity'] ?? 0) + 1;
+
+            break;
+        }
         unset($request);
 
-        return 'Request not found.';
+        if ($targetRequest === null) {
+            return 'Request not found.';
+        }
+
+        $ids = array_column($borrowings, 'id');
+        $newBorrowingId = empty($ids) ? 1 : max($ids) + 1;
+
+        $borrowings[] = [
+            'id' => $newBorrowingId,
+            'user_id' => (int) $targetRequest['user_id'],
+            'book_id' => (int) $targetRequest['book_id'],
+            'borrow_date' => date('Y-m-d'),
+            'return_date' => date('Y-m-d', strtotime('+14 days')),
+            'status' => 'active',
+        ];
+
+        $this->writeDataFile($this->requestsFile, $requests);
+        $this->writeDataFile($this->borrowingsFile, $borrowings);
+        $this->writeDataFile($this->booksFile, $books);
+
+        return 'Request #' . $requestId . ' approved successfully.';
     }
 
     public function rejectRequest(int $requestId): string
     {
-        foreach ($_SESSION['requests_data'] as &$request) {
-            if ((int) $request['id'] === $requestId) {
-                $request['status'] = 'rejected';
-                unset($request);
+        $requests = $this->readDataFile($this->requestsFile);
 
-                return 'Request #' . $requestId . ' rejected successfully.';
+        foreach ($requests as &$request) {
+            if ((int) $request['id'] !== $requestId) {
+                continue;
             }
-        }
 
+            if ((string) $request['status'] !== 'pending') {
+                unset($request);
+                return 'This request has already been processed.';
+            }
+
+            $request['status'] = 'rejected';
+            $this->writeDataFile($this->requestsFile, $requests);
+            unset($request);
+
+            return 'Request #' . $requestId . ' rejected successfully.';
+        }
         unset($request);
 
         return 'Request not found.';
@@ -163,15 +219,37 @@ class RequestService
 
     public function markBorrowingReturned(int $borrowingId): string
     {
-        foreach ($_SESSION['borrowings_data'] as &$borrowing) {
-            if ((int) $borrowing['id'] === $borrowingId) {
-                $borrowing['status'] = 'returned';
-                unset($borrowing);
+        $borrowings = $this->readDataFile($this->borrowingsFile);
+        $books = $this->readDataFile($this->booksFile);
 
-                return 'Borrowing #' . $borrowingId . ' marked as returned successfully.';
+        foreach ($borrowings as &$borrowing) {
+            if ((int) $borrowing['id'] !== $borrowingId) {
+                continue;
             }
-        }
 
+            if ((string) $borrowing['status'] !== 'active') {
+                unset($borrowing);
+                return 'This borrowing is already returned.';
+            }
+
+            $borrowing['status'] = 'returned';
+
+            $bookIndex = $this->findBookIndex($books, (int) $borrowing['book_id']);
+
+            if ($bookIndex !== null) {
+                $books[$bookIndex]['available_quantity'] = (int) ($books[$bookIndex]['available_quantity'] ?? $books[$bookIndex]['availableQuantity'] ?? 0) + 1;
+                $books[$bookIndex]['borrowed_quantity'] = max(
+                    0,
+                    (int) ($books[$bookIndex]['borrowed_quantity'] ?? $books[$bookIndex]['borrowedQuantity'] ?? 0) - 1
+                );
+            }
+
+            $this->writeDataFile($this->borrowingsFile, $borrowings);
+            $this->writeDataFile($this->booksFile, $books);
+            unset($borrowing);
+
+            return 'Borrowing #' . $borrowingId . ' marked as returned successfully.';
+        }
         unset($borrowing);
 
         return 'Borrowing not found.';
@@ -233,13 +311,50 @@ class RequestService
         return $items;
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function readDataFile(string $filePath): array
+    {
+        if (!file_exists($filePath)) {
+            return [];
+        }
+
+        $data = require $filePath;
+
+        return is_array($data) ? $data : [];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $data
+     */
+    private function writeDataFile(string $filePath, array $data): void
+    {
+        $export = "<?php\ndeclare(strict_types=1);\n\nreturn " . var_export($data, true) . ";\n";
+        file_put_contents($filePath, $export);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $books
+     */
+    private function findBookIndex(array $books, int $bookId): ?int
+    {
+        foreach ($books as $index => $book) {
+            if ((int) ($book['id'] ?? 0) === $bookId) {
+                return $index;
+            }
+        }
+
+        return null;
+    }
+
     private function getUserNameById(int $userId): string
     {
-        $users = require __DIR__ . '/../data/users-data.php';
+        $users = $this->readDataFile($this->usersFile);
 
         foreach ($users as $user) {
-            if ((int) $user['id'] === $userId) {
-                return (string) $user['name'];
+            if ((int) ($user['id'] ?? 0) === $userId) {
+                return (string) ($user['name'] ?? 'Unknown User');
             }
         }
 
@@ -248,11 +363,11 @@ class RequestService
 
     private function getBookTitleById(int $bookId): string
     {
-        $books = require __DIR__ . '/../data/books-data.php';
+        $books = $this->readDataFile($this->booksFile);
 
         foreach ($books as $book) {
-            if ((int) $book['id'] === $bookId) {
-                return (string) $book['title'];
+            if ((int) ($book['id'] ?? 0) === $bookId) {
+                return (string) ($book['title'] ?? 'Unknown Book');
             }
         }
 
