@@ -13,7 +13,8 @@ function require_login(): void
     }
 
     flash_set('error', 'Please log in first.');
-    redirect('../../public/login.php');
+    $loginPath = defined('LMS_ENTRY') && LMS_ENTRY === 'public' ? 'login.php' : '../../public/login.php';
+    redirect($loginPath);
 }
 
 function require_admin(): void
