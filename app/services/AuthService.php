@@ -1,14 +1,15 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../repositories/UserRepository.php';
+
 class AuthService
 {
-    /**
-     * returns the user dummy data, we will remove in phase 2 
-     */
-    public function getHardcodedUsers(): array
+    private UserRepository $users;
+
+    public function __construct(?UserRepository $users = null)
     {
-        return require __DIR__ . '/../data/users-data.php';
+        $this->users = $users ?? new UserRepository();
     }
 
     public function authenticate(string $usernameOrEmail, string $password): ?array
@@ -19,37 +20,79 @@ class AuthService
             return null;
         }
 
-        $users = $this->getHardcodedUsers();
+        $user = $this->users->findByUsernameOrEmail($identifier);
 
-        foreach ($users as $user) {
-            $username = isset($user['username']) ? trim((string) $user['username']) : '';
-            $email = isset($user['email']) ? trim((string) $user['email']) : '';
-
-            $matchesUsername = $username !== '' && strcasecmp($username, $identifier) === 0;
-            $matchesEmail = $email !== '' && strcasecmp($email, $identifier) === 0;
-
-            if (! $matchesUsername && ! $matchesEmail) {
-                continue;
-            }
-            //This needs to be updated in phase 2 then we will compare hashes not plaintext
-            $storedPassword = isset($user['password']) ? (string) $user['password'] : '';
-
-            if ($storedPassword !== $password) {
-                return null;
-            }
-
-            return $this->sanitizeUser($user);
+        if ($user === null) {
+            return null;
         }
 
-        return null;
+        $storedPassword = (string) ($user['password'] ?? '');
+
+        if (! password_verify($password, $storedPassword)) {
+            return null;
+        }
+
+        return $this->sanitizeUser($user);
     }
-    /**
-     * This was added so we dont send the users password to login in case we use it in Session
-     */
+
+    public function createPasswordReset(string $email): ?string
+    {
+        $email = trim($email);
+
+        if ($email === '') {
+            return null;
+        }
+
+        $user = $this->users->findByEmail($email);
+
+        if ($user === null) {
+            return null;
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+        if (! $this->users->createPasswordReset((int) $user['id'], $tokenHash, $expiresAt)) {
+            return null;
+        }
+
+        return $token;
+    }
+
+    public function resetPassword(string $token, string $password): bool
+    {
+        $token = trim($token);
+
+        if ($token === '' || $password === '') {
+            return false;
+        }
+
+        $reset = $this->users->findValidPasswordReset(hash('sha256', $token));
+
+        if ($reset === null) {
+            return false;
+        }
+
+        if (! $this->users->updatePassword((int) $reset['user_id'], $password)) {
+            return false;
+        }
+
+        $this->users->markPasswordResetUsed((int) $reset['id']);
+
+        return true;
+    }
+
     private function sanitizeUser(array $user): array
     {
         unset($user['password']);
 
-        return $user;
+        return [
+            'id' => (int) ($user['id'] ?? 0),
+            'name' => (string) ($user['name'] ?? ''),
+            'username' => (string) ($user['username'] ?? ''),
+            'email' => (string) ($user['email'] ?? ''),
+            'role' => (string) ($user['role'] ?? 'member'),
+        ];
     }
 }

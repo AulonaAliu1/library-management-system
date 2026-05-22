@@ -4,6 +4,8 @@ declare(strict_types=1);
 /**
  * Shared helpers qe mundemi me perdore ne te gjithe projektin
  */
+require_once __DIR__ . '/env.php';
+require_once __DIR__ . '/security.php';
 
 function redirect(string $url): void
 {
@@ -34,7 +36,7 @@ function flash_get(string $key): ?string
 // Funksion me  prevent XSS edhe per te mos shkaktu break te html ne rast te inputeve si <, " etj.
 function h(?string $value): string
 {
-    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    return e($value);
 }
 
 /**
@@ -60,10 +62,12 @@ function current_role(): ?string
     $user = current_user();
 
     if ($user === null || !isset($user['role']) || !is_string($user['role']) || $user['role'] === '') {
-        return null;
+        $sessionRole = $_SESSION['role'] ?? null;
+
+        return is_string($sessionRole) && $sessionRole !== '' ? strtolower($sessionRole) : null;
     }
 
-    return $user['role'];
+    return strtolower($user['role']);
 }
 
 function is_admin(): bool

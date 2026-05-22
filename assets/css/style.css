@@ -283,6 +283,41 @@ a:hover {
   border: 1px solid #fca5a5;
 }
 
+.dev-reset-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+
+.dev-reset-box p {
+  margin: 0;
+}
+
+.dev-reset-box details {
+  font-size: 0.875rem;
+}
+
+.dev-reset-box summary {
+  cursor: pointer;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.dev-reset-box code {
+  display: block;
+  margin-top: 0.5rem;
+  padding: 0.65rem;
+  overflow-wrap: anywhere;
+  border-radius: 6px;
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
 /* Footer */
 .site-footer {
   margin-top: auto;
@@ -397,6 +432,20 @@ body.dark .btn-danger {
 body.dark .btn-danger:hover {
   background: #991b1b;
   color: #ffffff;
+}
+
+body.dark .dev-reset-box {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+body.dark .dev-reset-box summary {
+  color: #93c5fd;
+}
+
+body.dark .dev-reset-box code {
+  background: #1e293b;
+  color: #bfdbfe;
 }
 
 body.dark .data-table {
