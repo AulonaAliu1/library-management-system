@@ -9,6 +9,7 @@ session_start();
 define('LMS_ENTRY', 'public');
 
 require_once __DIR__ . '/../app/helpers/functions.php';
+require_once __DIR__ . '/../app/helpers/validation.php';
 require_once __DIR__ . '/../app/services/AuthService.php';
 
 if (is_logged_in()) {
@@ -23,19 +24,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim((string) ($_POST['username'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
 
-    if ($username === '' || $password === '') {
+    if (! is_filled($username) || ! is_filled($password)) {
         $errorMessage = 'Please enter both your username or email and password.';
     } else {
-        $authService = new AuthService();
-        $user = $authService->authenticate($username, $password);
+        try {
+            $authService = new AuthService();
+            $user = $authService->authenticate($username, $password);
 
-        if ($user === null) {
-            $errorMessage = 'Invalid username or password.';
-        } else {
-            session_regenerate_id(true);
-            $_SESSION['user'] = $user;
+            if ($user === null) {
+                $errorMessage = 'Invalid username or password.';
+            } else {
+                session_regenerate_id(true);
+                $_SESSION['user'] = $user;
+                $_SESSION['user_id'] = (int) $user['id'];
+                $_SESSION['role'] = (string) $user['role'];
 
-            redirect('../app/pages/dashboard.php');
+                redirect('../app/pages/dashboard.php');
+            }
+        } catch (Throwable $exception) {
+            $errorMessage = 'Login is temporarily unavailable. Please try again later.';
         }
     }
 }
@@ -63,6 +70,7 @@ require_once __DIR__ . '/../app/includes/navbar.php';
                 <input type="password" id="password" name="password" autocomplete="current-password">
             </div>
             <button type="submit" class="btn btn-primary">Login</button>
+            <a class="btn btn-secondary" href="forgot-password.php">Forgot password?</a>
         </form>
     </section>
 </main>
