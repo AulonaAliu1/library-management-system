@@ -17,6 +17,7 @@ class UserService{
     return array_values(array_filter($users, static fn (array $u): bool => ($u['role'] ?? '') === 'member'));
 
    }
+   
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -28,5 +29,9 @@ class UserService{
         }
         return require __DIR__ . '/../data/users-data.php';
     }
+    public function deleteMember(int $id): bool
+{
+    return $this->users->delete($id);
+}
    
 }
