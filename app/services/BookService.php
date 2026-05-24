@@ -2,20 +2,57 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../classes/Book.php';
+require_once __DIR__ . '/../repositories/BookRepository.php';
 
 class BookService
 {
-    /**
-     * @return Book[]
-     */
+    private BookRepository $bookRepository;
+
+    public function __construct(?BookRepository $bookRepository = null){
+        $this->bookRepository = $bookRepository ?? new BookRepository();
+    }
+
+    
     public function getAllBooks(): array
     {
-        $booksData = require __DIR__ . '/../data/books-data.php';
+        $rows = $this->bookRepository->findAll();
 
         return array_map(
             fn (array $row): Book => $this->rowToBook($row),
-            $booksData
+            $rows
         );
+    }
+
+    public function getBookById(int $id){
+        $row = $this->bookRepository->findById($id);
+        return $row ? $this->rowToBook($row) : null;
+    }
+
+    public function createBook(array $data): bool{
+        $quantity = (int)($data['total_quantity'] ?? 0);
+        if($quantity < 0){
+            return false;
+        }
+    
+        if(isset($data['isbn']) && trim($data['isbn']) !== ''){
+            $existing = $this->bookRepository->findByIsbn($data['isbn']);
+            if($existing !== null){
+                return false;
+            }
+        }
+        return $this->bookRepository->create($data);
+    }
+
+    public function updateBook(int $id, array $data): bool{
+        $quantity = (int)($data['total_quantity'] ?? 0);
+        if($quantity < 0){
+            return false;
+        }
+        return $this->bookRepository->update($id, $data);
+    }
+
+    public function deleteBook(int $id): bool{
+        return $this->bookRepository->delete($id);
     }
 
     public function rowToBook(array $row): Book
@@ -29,14 +66,11 @@ class BookService
             (string) ($row['isbn'] ?? $row['ISBN'] ?? ''),
             (int) ($row['total_quantity'] ?? $row['totalQuantity'] ?? 0),
             (int) ($row['available_quantity'] ?? $row['availableQuantity'] ?? 0),
-            (int) ($row['borrowed_quantity'] ?? $row['borrowedQuantity'] ?? 0)
+            (int) ($row['borrowed_quantity'] ?? $row['borrowedQuantity'] ?? 0),
+            $row['image_path'] ?? null
         );
     }
 
-    /**
-     * @param Book[] $books
-     * @return Book[]
-     */
     public function searchBooks(array $books, string $search): array
     {
         $needle = trim($search);
@@ -67,10 +101,6 @@ class BookService
         ));
     }
 
-    /**
-     * @param Book[] $books
-     * @return Book[]
-     */
     public function filterByCategory(array $books, string $category): array
     {
         $selectedCategory = trim($category);
@@ -85,10 +115,6 @@ class BookService
         ));
     }
 
-    /**
-     * @param Book[] $books
-     * @return Book[]
-     */
     public function sortBooks(array $books, string $sort): array
     {
         switch ($sort) {
@@ -125,10 +151,6 @@ class BookService
         return $books;
     }
 
-    /**
-     * @param Book[] $books
-     * @return string[]
-     */
     public function getCategories(array $books): array
     {
         $categories = array_map(
