@@ -89,7 +89,7 @@ class UserRepository{
                     INNER JOIN users ON users.id = password_resets.user_id
                     WHERE password_resets.token_hash = :token_hash
                     AND password_resets.used_at IS NULL
-                    AND passwod_resets.expires_at > NOW()
+                    AND password_resets.expires_at > NOW()
                     LIMIT 1'
                 );
                 $statement->execute(['token_hash' => $tokenHash]);
