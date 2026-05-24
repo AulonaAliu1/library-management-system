@@ -9,6 +9,7 @@ class UserRepository{
         $statement = $connection->query('SELECT id, name, username, email, role FROM users ORDER BY id ASC');
         return $statement->fetchAll();
     }
+    
     public function findByUsernameOrEmail(string $identifier): ?array
     {
         $connection = Database:: connection();
@@ -115,8 +116,23 @@ class UserRepository{
                     $statement = $connection->prepare('UPDATE password_resets SET used_at = NOW() WHERE id = :id');
                      return $statement->execute(['id'=>$resetId]);
                 }
+                public function delete(int $id): bool
+                {
+                 $connection = Database::connection();
+
+                if (!$connection instanceof PDO) {
+                return false;
+                }
+
+                $statement = $connection->prepare(
+                'DELETE FROM users WHERE id = :id'
+                    );
+
+                    return $statement->execute([
+                'id' => $id
+                ]);
+                }
 
 
-            }
-        
+            } 
     
