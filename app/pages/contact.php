@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once '../core/Database.php';
+require_once '../services/MailService.php';
 
 $pdo = Database::connection();
 
@@ -16,6 +17,11 @@ include '../includes/navbar.php';
 
 $message="";
 $isSuccess=false;
+if(isset($_GET['success'])){
+
+    $message = "Message sent successfully!";
+    $isSuccess = true;
+}
 
 if($_SERVER['REQUEST_METHOD']=='POST'){
     $name=$_POST['name'];
@@ -40,36 +46,57 @@ $message="All Fields are required!";
     else{ 
         try{
 
+
         $stmt =$pdo->prepare(
          "INSERT INTO contact_messages(name,email,subject,message)
          VALUES (?,?,?,?) "
          );
 
-           $stmt->execute([
+    $stmt->execute([
       $name,
       $email,
       $subject,
       $text
 ]);
 
-        $message = "Message sent successfully!";
-        $isSuccess = true;
 
 
+    $mailService=new MailService();
 
-    }catch(PDOException $e) {
+    $emailBody="
+    New Contact Message
+    Name: $name
+    Email: $email
+    Subject: $subject
+    Message: $text
+    ";
+        $mailSent=$mailService->send(
+            'erdoartbasha@gmail.com',
+            'New Contact Message',
+            $emailBody
+        );
+        if($mailSent){
+        header("Location: contact.php?success=1");
+        exit;
 
-        $message = "Something went wrong!";
-    }
+}        else{
+            $message="saved in database, but email failed: ".$mailService->getLastError();
+
+        }
+
+    }catch(Exception $e) {
+
+        $message = $e->getMessage()
+        ;
+        }
 
 }
 
 }
+
+
 
 ?>
-
-
-
 <!DOCTYPE html>
 <html>
 <head>

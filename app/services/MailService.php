@@ -1,15 +1,53 @@
 <?php
 declare(strict_types=1);
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 require_once __DIR__ . '/../helpers/env.php';
+
 
 class MailService
 {
     private ?string $lastError = null;
 
-    public function send(string $to, string $subject, string $message): bool
+    public function send(
+        string $to, 
+        string $subject,
+         string $message
+        ): bool
     {
-        $this->lastError = null;
+        // $this->lastError = null;
+        $mail=new PHPMailer(true);
+        try{
+            $mail->isSMTP();
+
+            $mail->Host='smtp.gmail.com';
+            $mail->SMTPAuth = true;
+
+            $mail->Username='erdoartbasha@gmail.com';
+            $mail->Password="rhqz kqxi kakh ytus";
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = 587;
+
+            $mail->setFrom('erdoartbasha@gmail.com','Library Management System');
+
+            $mail->addAddress($to);
+            $mail->isHTML(false);
+            $mail->Subject = $subject;
+            $mail->Body = $message;
+
+            return $mail->send();
+
+
+
+
+        }catch(Exception $e){
+            $this->lastError=$mail->ErrorInfo;
+            return false;
+
+        }
+    
 
         $from = getenv('LMS_MAIL_FROM') ?: 'no-reply@library.local';
         $fromName = getenv('LMS_MAIL_FROM_NAME') ?: 'Library Management System';
