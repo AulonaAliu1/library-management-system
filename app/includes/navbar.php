@@ -32,9 +32,7 @@ if (LMS_ENTRY === 'public') {
             <li><a href="<?= h($pageBase . 'borrowings.php') ?>">Borrowings</a></li>
             <li><a href="<?= h($pageBase . 'profile.php') ?>">Profile</a></li>
 
-<?php if (!$isAdmin) : ?>
-    <li><a href="<?= h($pageBase . 'contact.php') ?>">Contact</a></li>
-<?php endif; ?>
+
             <li><a href="<?= h($pageBase . 'settings.php') ?>">Settings</a></li>
             <?php if ($isAdmin) : ?>
                 <li><a href="<?= h($pageBase . 'members.php') ?>">Members</a></li>
@@ -44,7 +42,7 @@ if (LMS_ENTRY === 'public') {
             <?php else : ?>
                 <li><a href="<?= h($loginUrl) ?>">Login</a></li>
             <?php endif; ?>
-            <?php if (!$isAdmin) : ?>
+            <?php if ($isLoggedIn && !$isAdmin) : ?>
     <li><a href="<?= h($pageBase . 'contact.php') ?>">Contact</a></li>
 <?php endif; ?>
         </ul>
