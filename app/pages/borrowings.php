@@ -32,7 +32,7 @@ $borrowingService = null;
 try {
     $pdo = Database::connection();
 
-    if (! $pdo instanceof PDO) {
+    if (! ($pdo instanceof PDO)) {
         throw new RuntimeException('Database connection is not available.');
     }
 
