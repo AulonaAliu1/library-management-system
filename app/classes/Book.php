@@ -12,6 +12,7 @@ class Book
     private int $totalQuantity;
     private int $availableQuantity;
     private int $borrowedQuantity;
+    private ?string $imagePath;
 
     public function __construct(
         int $id,
@@ -22,7 +23,8 @@ class Book
         string $isbn,
         int $totalQuantity,
         int $availableQuantity,
-        int $borrowedQuantity
+        int $borrowedQuantity,
+        ?string $imagePath = null
     ) {
         $this->setId($id);
         $this->setTitle($title);
@@ -33,6 +35,7 @@ class Book
         $this->setTotalQuantity($totalQuantity);
         $this->setAvailableQuantity($availableQuantity);
         $this->setBorrowedQuantity($borrowedQuantity);
+        $this->setImagePath($imagePath);
     }
 
     public function getId(): int
@@ -128,5 +131,14 @@ class Book
     public function isAvailable(): bool
     {
         return $this->availableQuantity > 0;
+    }
+
+    public function getImagePath(): ?string
+    {
+        return $this->imagePath;
+    }
+
+    public function setImagePath(?string $imagePath): void{
+        $this->imagePath = $imagePath ? trim($imagePath) : null;
     }
 }
