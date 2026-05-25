@@ -4,18 +4,19 @@
 
 declare(strict_types=1);
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 
 
-require_once '../../app/services/ExternalApiService.php';
+require_once __DIR__ . '/../../app/services/ExternalApiService.php';
 
 $isbn = trim($_GET['isbn']??'');
 
 if(empty($isbn)){
+    http_response_code(400);
     echo json_encode([
         'success'=>false,
-        'message'=>'isbn is required'
+        'message'=>'ISBN is required.'
     ]);
     exit;
 }
@@ -28,9 +29,10 @@ $apiService=new ExternalApiService();
 $book=$apiService->getBookByISBN($isbn);
 
 if(!$book){
+    http_response_code(404);
     echo json_encode([
     'success'=>false,
-    'message'=>'Book not found'
+    'message'=>$apiService->lastError() ?? 'Book not found.'
     ]);
     exit;
 }

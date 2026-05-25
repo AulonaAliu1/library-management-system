@@ -8,31 +8,22 @@ $(document).ready(function () {
       $statusText.css("color", "red");
       return;
     }
-    $statusText.text("Searching Open Library API via jQuery AJAX...");
+    $statusText.text("Searching Open Library API...");
     $statusText.css("color", "#555");
 
     $.ajax({
-      url: `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`,
+      url: "../../public/api/book-lookup.php",
       method: "GET",
+      data: { isbn },
       dataType: "json",
-      success: function (data) {
-
-        const bookKey = `ISBN:${isbn}`;
-
-        if (data && data[bookKey]) {
-          const bookData = data[bookKey];
-
+      success: function (response) {
+        if (response.success && response.data) {
+          const bookData = response.data;
           $("#title").val(bookData.title || "");
-          $("#isbn").val(isbn);
-          $("#description").val(bookData.notes || "No description available.");
-
-          if (bookData.authors && bookData.authors.length > 0) {
-            $("#author").val(bookData.authors[0].name);
-          }
-
-          if (bookData.subjects && bookData.subjects.length > 0) {
-            $("#category_input").val(bookData.subjects[0].name);
-          }
+          $("#isbn").val(bookData.isbn || isbn);
+          $("#description").val(bookData.description || "No description available.");
+          $("#author").val(bookData.author || "");
+          $("#category_input").val(bookData.category || "");
 
           $statusText.html(
             "<span>Book found successfully! Fields populated.</span>",
@@ -45,9 +36,9 @@ $(document).ready(function () {
           $statusText.css("color", "red");
         }
       },
-      error: function (xhr, status, error) {
-        console.error("jQuery AJAX Error:", error);
-        $statusText.text("An error occurred while communicating with the API.");
+      error: function (xhr) {
+        const response = xhr.responseJSON;
+        $statusText.text(response ? response.message : "An error occurred while communicating with the API.");
         $statusText.css("color", "red");
       },
     });
