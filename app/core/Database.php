@@ -15,7 +15,7 @@ final class Database
         $config = require __DIR__ . '/../config/database.php';
 
         $host = (string) ($config['host'] ?? '127.0.0.1');
-        $port = (string) ($config['port'] ?? '3306');
+        $port = (string) ($config['port'] ?? '3307');
         $database = (string) ($config['database'] ?? '');
         $charset = (string) ($config['charset'] ?? 'utf8mb4');
         $username = (string) ($config['username'] ?? 'root');

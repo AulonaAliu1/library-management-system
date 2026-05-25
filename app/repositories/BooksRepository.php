@@ -60,7 +60,10 @@ class BookRepository{
                     isbn = :isbn,
                     total_quantity = :total_quantity,
                     description = :description,
-                    available_quantity = :total_qty_calc - borrowed_quantity";
+                    available_quantity = CASE
+                        WHEN borrowed_quantity >= :total_qty_check THEN 0
+                        ELSE :total_qty_calc - borrowed_quantity
+                    END";
         
         $params = [
             ':id' => $id,
@@ -69,6 +72,7 @@ class BookRepository{
             ':category' => trim((string)($data['category'] ?? '')),
             ':isbn' => trim((string)($data['isbn'] ?? '')),
             ':total_quantity' => (int)($data['total_quantity'] ?? 0),
+            ':total_qty_check' => (int)($data['total_quantity'] ?? 0),
             ':total_qty_calc' => (int)($data['total_quantity'] ?? 0),
             ':description' => trim((string)($data['description'] ?? ''))
         ];
@@ -83,6 +87,25 @@ class BookRepository{
         $stmt = $this->db->prepare($sql);
         
         return $stmt->execute($params);
+    }
+
+    public function updateQuantity(int $id, int $quantity): bool{
+        $sql = "UPDATE books SET
+                    total_quantity = :total_quantity,
+                    available_quantity = CASE
+                        WHEN borrowed_quantity >= :total_qty_check THEN 0
+                        ELSE :total_qty_calc - borrowed_quantity
+                    END
+                WHERE id = :id";
+
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            ':id' => $id,
+            ':total_quantity' => $quantity,
+            ':total_qty_check' => $quantity,
+            ':total_qty_calc' => $quantity,
+        ]);
     }
 
     public function delete(int $id): bool{

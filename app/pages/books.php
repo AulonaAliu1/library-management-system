@@ -8,6 +8,10 @@ define('LMS_ENTRY', 'pages');
 require_once __DIR__ . '/../helpers/auth_guard.php';
 require_once __DIR__ . '/../helpers/security.php';
 require_once __DIR__ . '/../services/BookService.php';
+require_once __DIR__ . '/../repositories/RequestRepository.php';
+require_once __DIR__ . '/../repositories/BorrowingRepository.php';
+require_once __DIR__ . '/../services/RequestService.php';
+require_once __DIR__ . '/../core/Database.php';
 
 require_login();
 
@@ -29,20 +33,20 @@ $selectedBookId = (int)($_POST['book_id'] ?? 0);
 
 $showUpdateQuantityForm = $action === 'show_update_quantity';
 
-// POST ACTIONS (DELETE & QUANTITY ONLY)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
+// POST ACTIONS
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = (string)($_POST['csrf_token'] ?? '');
     if (!csrf_check($token)) {
-        die("Unauthorized request. Invalid CSRF token.");
+        $errorMessage = 'Security check failed. Please try again.';
     }
 
-    if ($action === 'update_quantity') {
+    if ($isAdmin && $errorMessage === null && $action === 'update_quantity') {
         $newQuantity = (int)($_POST['total_quantity'] ?? 0);
         if ($newQuantity < 0) {
             $errorMessage = "Quantity cannot be negative.";
             $showUpdateQuantityForm = true;
         } else {
-            if ($service->updateBook($selectedBookId, ['total_quantity' => $newQuantity])) {
+            if ($service->updateQuantity($selectedBookId, $newQuantity)) {
                 $successMessage = "Stock quantity updated successfully!";
             } else {
                 $errorMessage = "Failed to update quantity.";
@@ -50,11 +54,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAdmin) {
         }
     }
 
-    if ($action === 'delete_book') {
+    if ($isAdmin && $errorMessage === null && $action === 'delete_book') {
         if ($service->deleteBook($selectedBookId)) {
             $successMessage = "Book deleted successfully from database!";
         } else {
             $errorMessage = "Failed to delete the book.";
+        }
+    }
+
+    if ($isMember && $errorMessage === null && $action === 'request_book') {
+        $userId = (int)($_SESSION['user']['id'] ?? $_SESSION['user_id'] ?? $_SESSION['id'] ?? 0);
+        $pdo = Database::connection();
+
+        if (!($pdo instanceof PDO)) {
+            $errorMessage = 'Database connection is not available.';
+        } else {
+            $requestRepository = new RequestRepository($pdo);
+            $borrowingRepository = new BorrowingRepository($pdo);
+            $requestService = new RequestService($pdo, $requestRepository, $borrowingRepository);
+            $result = $requestService->createRequest($userId, $selectedBookId);
+
+            if ($result['success']) {
+                $successMessage = $result['message'];
+            } else {
+                $errorMessage = $result['message'];
+            }
         }
     }
 }
@@ -145,7 +169,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                 <form method="post" class="form-stack">
                     <input type="hidden" name="action" value="update_quantity">
                     <input type="hidden" name="book_id" value="<?= $selectedBook->getId() ?>">
-                    <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                     <div class="form-group">
                         <label for="single_quantity">New Total Quantity</label>
                         <input id="single_quantity" type="number" name="total_quantity" min="0" value="<?= $selectedBook->getTotalQuantity() ?>" required>
@@ -197,11 +221,11 @@ require_once __DIR__ . '/../includes/navbar.php';
                             <?php if ($isAdmin): ?>
                                 <a href="book-edit.php?id=<?= $book->getId() ?>" class="btn btn-primary">Edit</a>
                                 <button type="submit" name="action" value="show_update_quantity" class="btn btn-secondary">Quantity</button>
-                                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                 <button type="submit" name="action" value="delete_book" class="btn btn-danger" onclick="return confirm('Delete this book?');">Delete</button>
                             <?php elseif ($isMember && $book->getAvailableQuantity() > 0): ?>
+                                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                 <button type="submit" name="action" value="request_book" class="btn btn-primary">Request</button>
-                                <button type="submit" name="action" value="borrow_book" class="btn btn-secondary">Borrow</button>
                             <?php endif; ?>
                         </form>
                     </div>
