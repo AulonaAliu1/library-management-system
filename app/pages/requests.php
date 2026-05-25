@@ -54,9 +54,11 @@ try {
             $requestAction = (string) $_POST['request_action'];
 
             if ($requestAction === 'approve') {
-                $actionMessage = $requestService->approveRequest($requestId);
+                $result = $requestService->approveRequest($requestId);
+                $actionMessage = $result['message'];
             } elseif ($requestAction === 'reject') {
-                $actionMessage = $requestService->rejectRequest($requestId);
+                $result = $requestService->rejectRequest($requestId);
+                $actionMessage = $result['message'];
             }
         }
     }

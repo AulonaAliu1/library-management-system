@@ -109,9 +109,11 @@ final class BorrowingRepository
 
         $statement = $this->pdo->prepare($sql);
 
-        return $statement->execute([
+        $statement->execute([
             'status' => 'returned',
             'id' => $borrowingId,
         ]);
+
+        return $statement->rowCount() === 1;
     }
 }

@@ -71,7 +71,7 @@ $requestRepository = new RequestRepository($pdo);
 $borrowingRepository = new BorrowingRepository($pdo);
 $requestService = new RequestService($pdo, $requestRepository, $borrowingRepository);
 
-$message = $action === 'approve'
+$result = $action === 'approve'
     ? $requestService->approveRequest($requestId)
     : $requestService->rejectRequest($requestId);
 
@@ -82,7 +82,7 @@ $counts = $requestService->getRequestCounts($allRequests);
 if ($request === null) {
     json_response([
         'success' => false,
-        'message' => $message,
+        'message' => $result['message'],
     ], 404);
 }
 
@@ -90,8 +90,8 @@ $status = (string) ($request['status'] ?? '');
 $statusClass = $requestService->getRequestStatusClass($status);
 
 json_response([
-    'success' => str_contains(strtolower($message), 'successfully'),
-    'message' => $message,
+    'success' => $result['success'],
+    'message' => $result['message'],
     'request' => [
         'id' => (int) $request['id'],
         'status' => $status,

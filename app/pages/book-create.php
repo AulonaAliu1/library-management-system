@@ -89,7 +89,7 @@ require_once __DIR__ . '/../includes/navbar.php';
         <small id="api_status" style="display: block; margin-top: -20px; margin-bottom: 20px; font-weight: bold;"></small>
 
         <form action="book-create.php" method="POST" enctype="multipart/form-data" class="form-stack">
-            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
             <div class="form-group">
                 <label for="title">Book Title *</label>

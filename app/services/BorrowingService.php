@@ -51,17 +51,23 @@ final class BorrowingService
         $this->pdo->beginTransaction();
 
         try {
-            $this->borrowingRepository->markReturned($borrowingId);
-            $this->increaseBookAvailability((int) $borrowing['book_id']);
+            if (! $this->borrowingRepository->markReturned($borrowingId)) {
+                throw new RuntimeException('Unable to update borrowing status.');
+            }
+
+            if (! $this->increaseBookAvailability((int) $borrowing['book_id'])) {
+                throw new RuntimeException('Unable to update book availability.');
+            }
+
             $this->pdo->commit();
 
-            return 'Borrowing marked as returned successfully.';
+            return 'Book return confirmed successfully.';
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
 
-            return 'Unable to mark the borrowing as returned.';
+            return 'Unable to confirm the book return.';
         }
     }
 
@@ -96,7 +102,7 @@ final class BorrowingService
         ));
     }
 
-    private function increaseBookAvailability(int $bookId): void
+    private function increaseBookAvailability(int $bookId): bool
     {
         $sql = 'UPDATE books
                 SET available_quantity = available_quantity + 1,
@@ -108,5 +114,7 @@ final class BorrowingService
 
         $statement = $this->pdo->prepare($sql);
         $statement->execute(['id' => $bookId]);
+
+        return $statement->rowCount() === 1;
     }
 }

@@ -39,88 +39,110 @@ final class RequestService
         ];
     }
 
-    public function approveRequest(int $requestId): string
+    /**
+     * @return array{success: bool, message: string}
+     */
+    public function approveRequest(int $requestId): array
     {
         $request = $this->requestRepository->findById($requestId);
 
         if ($request === null) {
-            return 'Request not found.';
+            return $this->result(false, 'Request not found.');
         }
 
         if ((string) $request['status'] !== 'pending') {
-            return 'This request has already been processed.';
+            return $this->result(false, 'This request has already been processed.');
         }
 
         $book = $this->findBookById((int) $request['book_id']);
 
         if ($book === null) {
-            return 'Related book not found.';
+            return $this->result(false, 'Related book not found.');
         }
 
         if ((int) $book['available_quantity'] <= 0) {
-            return 'This book is currently unavailable.';
+            return $this->result(false, 'This book is currently unavailable.');
         }
 
         $this->pdo->beginTransaction();
 
         try {
-            $this->requestRepository->updateStatus($requestId, 'approved');
+            if (! $this->requestRepository->updateStatus($requestId, 'approved')) {
+                throw new RuntimeException('Unable to update request status.');
+            }
+
             $this->borrowingRepository->createBorrowing(
                 (int) $request['user_id'],
                 (int) $request['book_id']
             );
-            $this->decreaseBookAvailability((int) $request['book_id']);
+
+            if (! $this->decreaseBookAvailability((int) $request['book_id'])) {
+                throw new RuntimeException('Unable to update book availability.');
+            }
+
             $this->pdo->commit();
 
-            return 'Request approved successfully.';
+            return $this->result(true, 'Request approved successfully.');
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
 
-            return 'Unable to approve the request.';
+            return $this->result(false, 'Unable to approve the request.');
         }
     }
 
-    public function rejectRequest(int $requestId): string
+    /**
+     * @return array{success: bool, message: string}
+     */
+    public function rejectRequest(int $requestId): array
     {
         $request = $this->requestRepository->findById($requestId);
 
         if ($request === null) {
-            return 'Request not found.';
+            return $this->result(false, 'Request not found.');
         }
 
         if ((string) $request['status'] !== 'pending') {
-            return 'This request has already been processed.';
+            return $this->result(false, 'This request has already been processed.');
         }
 
         try {
-            $this->requestRepository->updateStatus($requestId, 'rejected');
+            if (! $this->requestRepository->updateStatus($requestId, 'rejected')) {
+                throw new RuntimeException('Unable to update request status.');
+            }
 
-            return 'Request rejected successfully.';
+            return $this->result(true, 'Request rejected successfully.');
         } catch (Throwable $exception) {
-            return 'Unable to reject the request.';
+            return $this->result(false, 'Unable to reject the request.');
         }
     }
 
-    public function createRequest(int $userId, int $bookId): string
+    /**
+     * @return array{success: bool, message: string}
+     */
+    public function createRequest(int $userId, int $bookId): array
     {
+        if ($userId <= 0 || $bookId <= 0) {
+            return $this->result(false, 'Unable to create the request.');
+        }
+
         $book = $this->findBookById($bookId);
 
         if ($book === null) {
-            return 'Selected book does not exist.';
+            return $this->result(false, 'Selected book does not exist.');
         }
 
         if ((int) $book['available_quantity'] <= 0) {
-            return 'This book is currently unavailable.';
+            return $this->result(false, 'This book is currently unavailable.');
         }
 
         try {
             $this->requestRepository->createRequest($userId, $bookId);
 
-            return 'Book request created successfully.';
+            return $this->result(true, 'Book request created successfully.');
         } catch (Throwable $exception) {
-            return 'Unable to create the request.';
+            return $this->result(false, 'Unable to create the request.');
         }
     }
 
@@ -182,7 +204,7 @@ final class RequestService
         return $book !== false ? $book : null;
     }
 
-    private function decreaseBookAvailability(int $bookId): void
+    private function decreaseBookAvailability(int $bookId): bool
     {
         $sql = 'UPDATE books
                 SET available_quantity = available_quantity - 1,
@@ -192,5 +214,18 @@ final class RequestService
 
         $statement = $this->pdo->prepare($sql);
         $statement->execute(['id' => $bookId]);
+
+        return $statement->rowCount() === 1;
+    }
+
+    /**
+     * @return array{success: bool, message: string}
+     */
+    private function result(bool $success, string $message): array
+    {
+        return [
+            'success' => $success,
+            'message' => $message,
+        ];
     }
 }

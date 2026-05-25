@@ -123,9 +123,11 @@ final class RequestRepository
 
         $statement = $this->pdo->prepare($sql);
 
-        return $statement->execute([
+        $statement->execute([
             'status' => $status,
             'id' => $requestId,
         ]);
+
+        return $statement->rowCount() === 1;
     }
 }

@@ -51,6 +51,14 @@ class BookService
         return $this->bookRepository->update($id, $data);
     }
 
+    public function updateQuantity(int $id, int $quantity): bool{
+        if($quantity < 0){
+            return false;
+        }
+
+        return $this->bookRepository->updateQuantity($id, $quantity);
+    }
+
     public function deleteBook(int $id): bool{
         return $this->bookRepository->delete($id);
     }

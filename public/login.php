@@ -18,6 +18,7 @@ if (is_logged_in()) {
 
 $pageTitle = 'Login';
 $errorMessage = flash_get('error');
+$successMessage = flash_get('success');
 $username = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -60,6 +61,10 @@ require_once __DIR__ . '/../app/includes/navbar.php';
             <div class="flash flash-error"><?= h($errorMessage) ?></div>
         <?php endif; ?>
 
+        <?php if ($successMessage !== null) : ?>
+            <div class="flash flash-success"><?= h($successMessage) ?></div>
+        <?php endif; ?>
+
         <form class="form-stack" action="" method="post" novalidate>
             <div class="form-group">
                 <label for="username">Username or email</label>
@@ -70,6 +75,7 @@ require_once __DIR__ . '/../app/includes/navbar.php';
                 <input type="password" id="password" name="password" autocomplete="current-password">
             </div>
             <button type="submit" class="btn btn-primary">Login</button>
+            <a class="btn btn-secondary" href="register.php">Register</a>
             <a class="btn btn-secondary" href="forgot-password.php">Forgot password?</a>
         </form>
     </section>

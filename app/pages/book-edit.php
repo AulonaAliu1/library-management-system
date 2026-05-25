@@ -97,7 +97,7 @@ require_once __DIR__ . '/../includes/navbar.php';
         <?php endif; ?>
 
         <form action="book-edit.php?id=<?= $bookId ?>" method="POST" enctype="multipart/form-data" class="form-stack">
-            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
             <div class="form-group">
                 <label for="title">Book Title *</label>

@@ -70,8 +70,8 @@ require_once __DIR__ . '/../includes/navbar.php';
     <h1>Borrowings</h1>
     <p class="text-muted">
         <?= $isAdmin
-            ? 'Admin can view all active and returned borrowings and update their status.'
-            : 'Here you can view your own borrowings and return dates.'; ?>
+            ? 'Admin staff can view borrowings and confirm books returned at the library desk.'
+            : 'Here you can view your borrowed books, due dates, and borrowing status.'; ?>
     </p>
 
     <?php if ($databaseError !== null): ?>
@@ -97,7 +97,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                         <?php endif; ?>
                         <th>Book</th>
                         <th>Borrow Date</th>
-                        <th>Return Date</th>
+                        <th>Due Date</th>
                         <th>Status</th>
                         <?php if ($isAdmin): ?>
                             <th>Actions</th>
@@ -129,7 +129,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                                                 <input type="hidden" name="borrowing_id" value="<?= (int) $borrowing['id'] ?>">
                                                 <input type="hidden" name="borrowing_action" value="mark_returned">
                                                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                                                <button type="submit">Mark Returned</button>
+                                                <button type="submit">Confirm Return</button>
                                             </form>
                                         <?php else: ?>
                                             <span class="text-muted">Already returned</span>
