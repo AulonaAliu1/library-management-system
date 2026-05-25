@@ -60,7 +60,7 @@ if (! in_array($action, ['approve', 'reject'], true)) {
 
 $pdo = Database::connection();
 
-if (! $pdo instanceof PDO) {
+if (! ($pdo instanceof PDO)) {
     json_response([
         'success' => false,
         'message' => 'Database connection is not available.',
