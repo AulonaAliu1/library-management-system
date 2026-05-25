@@ -45,7 +45,8 @@ CREATE TABLE books (
     total_quantity INT UNSIGNED NOT NULL DEFAULT 0,
     available_quantity INT UNSIGNED NOT NULL DEFAULT 0,
     borrowed_quantity INT UNSIGNED NOT NULL DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    image_path VARCHAR(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE requests (
@@ -87,22 +88,22 @@ INSERT INTO users (id, name, username, email, role, password) VALUES
 (4, 'Erdoart', 'Erdoart', 'erdoart@library.local', 'member', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2'),
 (5, 'Lindrit', 'Lindrit', 'lindrit@library.local', 'member', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2');
 
-INSERT INTO books (id, title, author, category, description, isbn, total_quantity, available_quantity, borrowed_quantity) VALUES
-(1, 'Clean Code', 'Robert C. Martin', 'Software Engineering', 'A practical guide to writing readable, maintainable, and disciplined code.', '978-0132350884', 5, 2, 3),
-(2, 'Introduction to Algorithms', 'Thomas H. Cormen', 'Algorithms', 'A comprehensive textbook covering core algorithm design and analysis techniques.', '978-0262033848', 8, 6, 2),
-(3, 'The Pragmatic Programmer', 'Andrew Hunt and David Thomas', 'Programming', 'Timeless advice for improving craft, teamwork, and practical software delivery.', '978-0135957059', 6, 0, 6),
-(4, 'Deep Work', 'Cal Newport', 'Self-help', 'Strategies for focused work and better productivity in a distracted environment.', '978-1455586691', 6, 2, 4),
-(5, 'Computer Networks', 'Andrew S. Tanenbaum', 'Networking', 'A foundation in network architectures, protocols, and real-world communication systems.', '978-0132126953', 4, 0, 4),
-(6, 'Database System Concepts', 'Abraham Silberschatz', 'Database', 'A broad introduction to database design, SQL, transactions, and data management.', '978-0073523323', 9, 7, 2),
-(7, 'Design Patterns', 'Erich Gamma et al.', 'Software Engineering', 'Classic reusable object-oriented design solutions for common software problems.', '978-0201633610', 4, 0, 4),
-(8, 'Refactoring', 'Martin Fowler', 'Programming', 'Improving existing code through small, safe structural changes.', '978-0134757599', 7, 4, 3),
-(9, 'Code Complete', 'Steve McConnell', 'Software Engineering', 'A comprehensive guide to software construction and best coding practices.', '978-0735619678', 6, 4, 2),
-(10, 'Algorithms Unlocked', 'Thomas H. Cormen', 'Algorithms', 'An accessible introduction to algorithms for beginners.', '978-0262518802', 6, 1, 5),
-(11, 'You Don''t Know JS', 'Kyle Simpson', 'Programming', 'A deep dive into the core mechanisms of JavaScript.', '978-1491904244', 7, 5, 2),
-(12, 'Atomic Habits', 'James Clear', 'Self-help', 'A guide to building good habits and breaking bad ones.', '978-0735211292', 6, 0, 6),
-(13, 'Computer Networking: A Top-Down Approach', 'James F. Kurose', 'Networking', 'A modern approach to understanding networking principles.', '978-0133594140', 5, 1, 4),
-(14, 'SQL Fundamentals', 'John J. Patrick', 'Database', 'An introduction to SQL and relational database concepts.', '978-0131407336', 8, 6, 2),
-(15, 'Working Effectively with Legacy Code', 'Michael Feathers', 'Software Engineering', 'Techniques for safely modifying and improving legacy systems.', '978-0131177055', 4, 0, 4);
+INSERT INTO books (id, title, author, category, description, isbn, total_quantity, available_quantity, borrowed_quantity, image_path) VALUES
+(1, 'Clean Code', 'Robert C. Martin', 'Software Engineering', 'A practical guide to writing readable, maintainable, and disciplined code.', '978-0132350884', 5, 2, 3, 'uploads/books/clean_code.png'),
+(2, 'Introduction to Algorithms', 'Thomas H. Cormen', 'Algorithms', 'A comprehensive textbook covering core algorithm design and analysis techniques.', '978-0262033848', 8, 6, 2, 'uploads/books/algorithms.png'),
+(3, 'The Pragmatic Programmer', 'Andrew Hunt and David Thomas', 'Programming', 'Timeless advice for improving craft, teamwork, and practical software delivery.', '978-0135957059', 6, 0, 6, 'uploads/books/pragmatic_programmer.png'),
+(4, 'Deep Work', 'Cal Newport', 'Self-help', 'Strategies for focused work and better productivity in a distracted environment.', '978-1455586691', 6, 2, 4, 'uploads/books/deep_work.png'),
+(5, 'Computer Networks', 'Andrew S. Tanenbaum', 'Networking', 'A foundation in network architectures, protocols, and real-world communication systems.', '978-0132126953', 4, 0, 4, 'uploads/books/computer_networks.png'),
+(6, 'Database System Concepts', 'Abraham Silberschatz', 'Database', 'A broad introduction to database design, SQL, transactions, and data management.', '978-0073523323', 9, 7, 2, 'uploads/books/database_system_concepts.png'),
+(7, 'Design Patterns', 'Erich Gamma et al.', 'Software Engineering', 'Classic reusable object-oriented design solutions for common software problems.', '978-0201633610', 4, 0, 4, 'uploads/books/design_patterns.png'),
+(8, 'Refactoring', 'Martin Fowler', 'Programming', 'Improving existing code through small, safe structural changes.', '978-0134757599', 7, 4, 3, 'uploads/books/refactoring.png'),
+(9, 'Code Complete', 'Steve McConnell', 'Software Engineering', 'A comprehensive guide to software construction and best coding practices.', '978-0735619678', 6, 4, 2, 'uploads/books/code_complete.png'),
+(10, 'Algorithms Unlocked', 'Thomas H. Cormen', 'Algorithms', 'An accessible introduction to algorithms for beginners.', '978-0262518802', 6, 1, 5, 'uploads/books/algorithm_unlocked.png'),
+(11, 'You Don''t Know JS', 'Kyle Simpson', 'Programming', 'A deep dive into the core mechanisms of JavaScript.', '978-1491904244', 7, 5, 2, 'uploads/books/ydk_js.png'),
+(12, 'Atomic Habits', 'James Clear', 'Self-help', 'A guide to building good habits and breaking bad ones.', '978-0735211292', 6, 0, 6, 'uploads/books/atomic_habits.png'),
+(13, 'Computer Networking: A Top-Down Approach', 'James F. Kurose', 'Networking', 'A modern approach to understanding networking principles.', '978-0133594140', 5, 1, 4, 'uploads/books/computer_network.png'),
+(14, 'SQL Fundamentals', 'John J. Patrick', 'Database', 'An introduction to SQL and relational database concepts.', '978-0131407336', 8, 6, 2, 'uploads/books/sql_fundamentals.png'),
+(15, 'Working Effectively with Legacy Code', 'Michael Feathers', 'Software Engineering', 'Techniques for safely modifying and improving legacy systems.', '978-0131177055', 4, 0, 4, 'uploads/books/legacy_code.png');
 
 INSERT INTO requests (id, user_id, book_id, status, request_date) VALUES
 (1, 2, 1, 'rejected', '2026-03-15'),
