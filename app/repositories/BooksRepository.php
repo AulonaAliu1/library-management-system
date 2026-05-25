@@ -33,8 +33,8 @@ class BookRepository{
     }
 
     public function create(array $data): bool{
-        $sql = "INSERT INTO books(title, author, category, isbn, total_quantity, available_quantity, borrowed_quantity, description) 
-                VALUES (:title, :author, :category, :isbn, :total_quantity, :available_quantity, 0, :description)";
+        $sql = "INSERT INTO books(title, author, category, isbn, total_quantity, available_quantity, borrowed_quantity, description, image_path) 
+                VALUES (:title, :author, :category, :isbn, :total_quantity, :available_quantity, 0, :description, :image_path)";
 
         $stmt = $this->db->prepare($sql);
 
@@ -45,7 +45,8 @@ class BookRepository{
         ':isbn' => $data['isbn'],
         ':total_quantity' => $data['total_quantity'],
         ':available_quantity' => $data['total_quantity'],
-        ':description' => $data['description']
+        ':description' => $data['description'],
+        ':image_path' => $data['image_path'] ?? null
         ]);
     }
 
@@ -59,15 +60,7 @@ class BookRepository{
                     isbn = :isbn,
                     total_quantity = :total_quantity,
                     description = :description,
-                    available_quantity = :total_quantity - borrowed_quantity";
-        
-        if ($hasImage) {
-            $sql .= ", image_path = :image_path";
-        }
-        
-        $sql .= " WHERE id = :id";
-        
-        $stmt = $this->db->prepare($sql);
+                    available_quantity = :total_qty_calc - borrowed_quantity";
         
         $params = [
             ':id' => $id,
@@ -76,12 +69,18 @@ class BookRepository{
             ':category' => trim((string)($data['category'] ?? '')),
             ':isbn' => trim((string)($data['isbn'] ?? '')),
             ':total_quantity' => (int)($data['total_quantity'] ?? 0),
+            ':total_qty_calc' => (int)($data['total_quantity'] ?? 0),
             ':description' => trim((string)($data['description'] ?? ''))
         ];
         
-        if ($hasImage) {
+        if (isset($data['image_path']) && $data['image_path'] !== null && $data['image_path'] !== '') {
+            $sql .= ", image_path = :image_path";
             $params[':image_path'] = $data['image_path'];
         }
+
+        $sql .= " WHERE id = :id";
+
+        $stmt = $this->db->prepare($sql);
         
         return $stmt->execute($params);
     }
