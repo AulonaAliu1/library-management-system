@@ -1,9 +1,9 @@
 <?php
 
+declare(strict_types=1);
 
 require_once '../core/Database.php';
 
-$pdo = Database::connection();
 $pdo = Database::connection();
 
 if (!$pdo) {
@@ -15,6 +15,8 @@ include '../includes/header.php';
 include '../includes/navbar.php';
 
 $message="";
+$isSuccess=false;
+
 if($_SERVER['REQUEST_METHOD']=='POST'){
     $name=$_POST['name'];
     $email=$_POST['email'];
@@ -22,13 +24,21 @@ if($_SERVER['REQUEST_METHOD']=='POST'){
     $text=$_POST['message'];
 
     if(
-        empty($name)||empty($email)||empty($subject) ||
+        empty($name)||
+        empty($email)||
+        empty($subject) ||
         empty($text)
     ){
 $message="All Fields are required!";
 
     }
+    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+        $message = "Invalid email format!";
+
+    }
     else{ 
+        try{
 
         $stmt =$pdo->prepare(
          "INSERT INTO contact_messages(name,email,subject,message)
@@ -41,11 +51,19 @@ $message="All Fields are required!";
       $subject,
       $text
 ]);
+
         $message = "Message sent successfully!";
+        $isSuccess = true;
 
 
 
+    }catch(PDOException $e) {
+
+        $message = "Something went wrong!";
     }
+
+}
+
 }
 
 ?>
@@ -65,10 +83,15 @@ $message="All Fields are required!";
     <h1>Contact Us</h1>
 
     <div class="contact-form">
+        <?php if(!empty($message)): ?>
 
-        <p class="message">
+
+        <p class="<?= $isSuccess?'success-message':'error-message' ?>">
             <?= htmlspecialchars($message) ?>
         </p>
+
+        <?php  endif;?>
+
 
         <form method="POST">
 
@@ -76,23 +99,27 @@ $message="All Fields are required!";
                 type="text"
                 name="name"
                 placeholder="Name"
+                required
             >
 
             <input
                 type="email"
                 name="email"
                 placeholder="Email"
+                required
             >
 
             <input
                 type="text"
                 name="subject"
                 placeholder="Subject"
+                required
             >
 
             <textarea
                 name="message"
                 placeholder="Message"
+                required
             ></textarea>
 
             <button type="submit">
