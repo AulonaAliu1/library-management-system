@@ -60,6 +60,10 @@ final class RequestService
             return $this->result(false, 'Related book not found.');
         }
 
+        if ((string) ($book['status'] ?? 'active') !== 'active') {
+            return $this->result(false, 'This book is not available for requests.');
+        }
+
         if ((int) $book['available_quantity'] <= 0) {
             return $this->result(false, 'This book is currently unavailable.');
         }
@@ -133,8 +137,20 @@ final class RequestService
             return $this->result(false, 'Selected book does not exist.');
         }
 
+        if ((string) ($book['status'] ?? 'active') !== 'active') {
+            return $this->result(false, 'This book is not available for requests.');
+        }
+
         if ((int) $book['available_quantity'] <= 0) {
             return $this->result(false, 'This book is currently unavailable.');
+        }
+
+        if ($this->requestRepository->hasPendingRequest($userId, $bookId)) {
+            return $this->result(false, 'You already have a pending request for this book.');
+        }
+
+        if ($this->borrowingRepository->hasActiveBorrowing($userId, $bookId)) {
+            return $this->result(false, 'You already have an active borrowing for this book.');
         }
 
         try {
@@ -191,7 +207,7 @@ final class RequestService
      */
     private function findBookById(int $bookId): ?array
     {
-        $sql = 'SELECT id, available_quantity
+        $sql = 'SELECT id, available_quantity, status
                 FROM books
                 WHERE id = :id
                 LIMIT 1';
@@ -210,10 +226,14 @@ final class RequestService
                 SET available_quantity = available_quantity - 1,
                     borrowed_quantity = borrowed_quantity + 1
                 WHERE id = :id
-                  AND available_quantity > 0';
+                  AND available_quantity > 0
+                  AND status = :status';
 
         $statement = $this->pdo->prepare($sql);
-        $statement->execute(['id' => $bookId]);
+        $statement->execute([
+            'id' => $bookId,
+            'status' => 'active',
+        ]);
 
         return $statement->rowCount() === 1;
     }

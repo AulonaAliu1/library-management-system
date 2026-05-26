@@ -47,7 +47,7 @@ $(document).ready(function () {
   $(".btn-delete-book").on("click", function (e) {
     e.preventDefault();
 
-    if (!confirm("Are you absolutely sure you want to delete this book?")) {
+    if (!confirm("Archive this book?")) {
       return;
     }
 
@@ -76,7 +76,7 @@ $(document).ready(function () {
       error: function (xhr) {
         const response = xhr.responseJSON;
         alert(
-          "Failed to delete book: " +
+          "Failed to archive book: " +
             (response ? response.message : "Unknown error"),
         );
       },

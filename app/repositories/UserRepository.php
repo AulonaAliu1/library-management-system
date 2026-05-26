@@ -17,7 +17,7 @@ class UserRepository
         }
 
         $statement = $connection->query(
-            'SELECT id, name, username, email, role, created_at
+            'SELECT id, name, username, email, role, status, created_at
              FROM users
              ORDER BY created_at DESC, id DESC'
         );
@@ -37,7 +37,7 @@ class UserRepository
         }
 
         $statement = $connection->prepare(
-            'SELECT id, name, username, email, role, created_at
+            'SELECT id, name, username, email, role, status, created_at
              FROM users
              WHERE role = :role
              ORDER BY created_at DESC, id DESC'
@@ -59,7 +59,7 @@ class UserRepository
         }
 
         $statement = $connection->prepare(
-            'SELECT id, name, username, email, role, password, created_at
+            'SELECT id, name, username, email, role, status, password, created_at
              FROM users
              WHERE id = :id
              LIMIT 1'
@@ -83,7 +83,7 @@ class UserRepository
         }
 
         $statement = $connection->prepare(
-            'SELECT id, name, username, email, role, password, created_at
+            'SELECT id, name, username, email, role, status, password, created_at
              FROM users
              WHERE id = :id
                AND role = :role
@@ -111,7 +111,7 @@ class UserRepository
         }
 
         $statement = $connection->prepare(
-            'SELECT id, name, username, email, role, password
+            'SELECT id, name, username, email, role, status, password
              FROM users
              WHERE username = :username OR email = :email
              LIMIT 1'
@@ -135,8 +135,8 @@ class UserRepository
         }
 
         $statement = $connection->prepare(
-            'INSERT INTO users (name, username, email, role, password)
-             VALUES (:name, :username, :email, :role, :password)'
+            'INSERT INTO users (name, username, email, role, password, status)
+             VALUES (:name, :username, :email, :role, :password, :status)'
         );
 
         return $statement->execute([
@@ -145,6 +145,7 @@ class UserRepository
             'email' => $data['email'],
             'role' => $data['role'],
             'password' => password_hash((string) $data['password'], PASSWORD_DEFAULT),
+            'status' => $data['status'] ?? 'active',
         ]);
     }
 
@@ -170,12 +171,6 @@ class UserRepository
             'role' => $data['role'],
         ];
 
-        if ((string) ($data['password'] ?? '') !== '') {
-            $sql .= ',
-                    password = :password';
-            $params['password'] = password_hash((string) $data['password'], PASSWORD_DEFAULT);
-        }
-
         $sql .= '
                 WHERE id = :id
                   AND role = :member_role';
@@ -184,6 +179,32 @@ class UserRepository
         $statement = $connection->prepare($sql);
 
         return $statement->execute($params);
+    }
+
+    public function updateProfile(int $id, array $data): bool
+    {
+        $connection = Database::connection();
+
+        if (! ($connection instanceof PDO)) {
+            return false;
+        }
+
+        $statement = $connection->prepare(
+            'UPDATE users
+             SET name = :name,
+                 username = :username,
+                 email = :email
+             WHERE id = :id
+               AND status = :status'
+        );
+
+        return $statement->execute([
+            'id' => $id,
+            'name' => $data['name'],
+            'username' => $data['username'],
+            'email' => $data['email'],
+            'status' => 'active',
+        ]);
     }
 
     public function usernameExists(string $username, ?int $exceptId = null): bool
@@ -224,7 +245,7 @@ class UserRepository
         }
 
         $statement = $connection->prepare(
-            'SELECT id, name, username, email, role
+            'SELECT id, name, username, email, role, status
              FROM users
              WHERE email = :email
              LIMIT 1'
@@ -349,7 +370,7 @@ class UserRepository
         return $statement->execute(['id' => $resetId]);
     }
 
-    public function delete(int $id): bool
+    public function deactivateMember(int $id): bool
     {
         $connection = Database::connection();
 
@@ -358,7 +379,8 @@ class UserRepository
         }
 
         $statement = $connection->prepare(
-            'DELETE FROM users
+            'UPDATE users
+             SET status = :status
              WHERE id = :id
                AND role = :role'
         );
@@ -366,7 +388,29 @@ class UserRepository
         return $statement->execute([
             'id' => $id,
             'role' => 'member',
+            'status' => 'inactive',
+        ]);
+    }
+
+    public function reactivateMember(int $id): bool
+    {
+        $connection = Database::connection();
+
+        if (! ($connection instanceof PDO)) {
+            return false;
+        }
+
+        $statement = $connection->prepare(
+            'UPDATE users
+             SET status = :status
+             WHERE id = :id
+               AND role = :role'
+        );
+
+        return $statement->execute([
+            'id' => $id,
+            'role' => 'member',
+            'status' => 'active',
         ]);
     }
 }
-    

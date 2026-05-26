@@ -16,26 +16,34 @@ require_admin();
 $pageTitle = 'Edit Book';
 $extraCss = './../../assets/css/books.css';
 
-$bookService = new BookService();
 $uploadService = new FileUploadService();
 
 $errorMessage = null;
 $successMessage = null;
 
 $bookId = (int)($_GET['id'] ?? 0);
-$book = $bookService->getBookById($bookId);
+
+try {
+    $bookService = new BookService();
+    $book = $bookService->getBookById($bookId);
+} catch (Throwable $exception) {
+    error_log('Book edit database error: ' . $exception->getMessage());
+    $bookService = null;
+    $book = null;
+    $errorMessage = 'Books module is temporarily unavailable. Please try again later.';
+}
 
 if ($book === null) {
-    $_SESSION['flash_error'] = "The requested book was not found.";
+    $_SESSION['flash_error'] = $errorMessage ?? "The requested book was not found.";
     header("Location: books.php");
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $bookService !== null) {
 
     $token = (string)($_POST['csrf_token'] ?? '');
     if (!csrf_check($token)) {
-        die("Unauthorized request (Invalid CSRF Token).");
+        $errorMessage = 'Security check failed. Please try again.';
     }
 
     $title = trim((string)($_POST['title'] ?? ''));
@@ -45,9 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $total_quantity = (int)($_POST['total_quantity'] ?? 0);
     $description = trim((string)($_POST['description'] ?? ''));
 
-    if (!is_filled($title) || !is_filled($author)) {
+    if ($errorMessage === null && (!is_filled($title) || !is_filled($author))) {
         $errorMessage = "Title and Author fields are required.";
-    } else {
+    } elseif ($errorMessage === null) {
         try {
             $imagePath = $book->getImagePath(); 
 
@@ -78,7 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             catch (Exception $e) {
-            $errorMessage = $e->getMessage();
+            error_log('Book edit error: ' . $e->getMessage());
+            $errorMessage = 'Unable to update the book right now.';
         }
     }
 }

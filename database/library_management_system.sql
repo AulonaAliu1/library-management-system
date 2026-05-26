@@ -21,6 +21,7 @@ CREATE TABLE users (
     username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(150) NOT NULL UNIQUE,
     role ENUM('admin', 'member') NOT NULL DEFAULT 'member',
+    status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -46,7 +47,8 @@ CREATE TABLE books (
     available_quantity INT UNSIGNED NOT NULL DEFAULT 0,
     borrowed_quantity INT UNSIGNED NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    image_path VARCHAR(255) DEFAULT NULL
+    image_path VARCHAR(255) DEFAULT NULL,
+    status ENUM('active', 'archived') NOT NULL DEFAULT 'active'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE requests (
@@ -56,8 +58,8 @@ CREATE TABLE requests (
     status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
     request_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_requests_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    CONSTRAINT fk_requests_book FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+    CONSTRAINT fk_requests_user FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT fk_requests_book FOREIGN KEY (book_id) REFERENCES books (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE borrowings (
@@ -68,8 +70,8 @@ CREATE TABLE borrowings (
     return_date DATE NOT NULL,
     status ENUM('active', 'returned') NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_borrowings_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    CONSTRAINT fk_borrowings_book FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+    CONSTRAINT fk_borrowings_user FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT fk_borrowings_book FOREIGN KEY (book_id) REFERENCES books (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE contact_messages (
@@ -81,29 +83,29 @@ CREATE TABLE contact_messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO users (id, name, username, email, role, password) VALUES
-(1, 'Admin', 'Admin', 'admin@library.local', 'admin', '$2y$10$jPa19oLU5BgzissD0qzv4uu/AYTcntkv3IIAhWvQ3zk9onsRT3axi'),
-(2, 'Aulona', 'Aulona', 'aulona@library.local', 'member', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2'),
-(3, 'Eliza', 'Eliza', 'eliza@library.local', 'member', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2'),
-(4, 'Erdoart', 'Erdoart', 'erdoart@library.local', 'member', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2'),
-(5, 'Lindrit', 'Lindrit', 'lindrit@library.local', 'member', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2');
+INSERT INTO users (id, name, username, email, role, status, password) VALUES
+(1, 'Admin', 'Admin', 'admin@library.local', 'admin', 'active', '$2y$10$jPa19oLU5BgzissD0qzv4uu/AYTcntkv3IIAhWvQ3zk9onsRT3axi'),
+(2, 'Aulona', 'Aulona', 'aulona@library.local', 'member', 'active', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2'),
+(3, 'Eliza', 'Eliza', 'eliza@library.local', 'member', 'active', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2'),
+(4, 'Erdoart', 'Erdoart', 'erdoart@library.local', 'member', 'active', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2'),
+(5, 'Lindrit', 'Lindrit', 'lindrit@library.local', 'member', 'active', '$2y$10$2LGXWJPdVdW5WgI4fryjaed0s73lHrd/QqRyjlg7WrPJo6V.xlhP2');
 
-INSERT INTO books (id, title, author, category, description, isbn, total_quantity, available_quantity, borrowed_quantity, image_path) VALUES
-(1, 'Clean Code', 'Robert C. Martin', 'Software Engineering', 'A practical guide to writing readable, maintainable, and disciplined code.', '978-0132350884', 5, 2, 3, 'uploads/books/clean_code.png'),
-(2, 'Introduction to Algorithms', 'Thomas H. Cormen', 'Algorithms', 'A comprehensive textbook covering core algorithm design and analysis techniques.', '978-0262033848', 8, 6, 2, 'uploads/books/algorithms.png'),
-(3, 'The Pragmatic Programmer', 'Andrew Hunt and David Thomas', 'Programming', 'Timeless advice for improving craft, teamwork, and practical software delivery.', '978-0135957059', 6, 0, 6, 'uploads/books/pragmatic_programmer.png'),
-(4, 'Deep Work', 'Cal Newport', 'Self-help', 'Strategies for focused work and better productivity in a distracted environment.', '978-1455586691', 6, 2, 4, 'uploads/books/deep_work.png'),
-(5, 'Computer Networks', 'Andrew S. Tanenbaum', 'Networking', 'A foundation in network architectures, protocols, and real-world communication systems.', '978-0132126953', 4, 0, 4, 'uploads/books/computer_networks.png'),
-(6, 'Database System Concepts', 'Abraham Silberschatz', 'Database', 'A broad introduction to database design, SQL, transactions, and data management.', '978-0073523323', 9, 7, 2, 'uploads/books/database_system_concepts.png'),
-(7, 'Design Patterns', 'Erich Gamma et al.', 'Software Engineering', 'Classic reusable object-oriented design solutions for common software problems.', '978-0201633610', 4, 0, 4, 'uploads/books/design_patterns.png'),
-(8, 'Refactoring', 'Martin Fowler', 'Programming', 'Improving existing code through small, safe structural changes.', '978-0134757599', 7, 4, 3, 'uploads/books/refactoring.png'),
-(9, 'Code Complete', 'Steve McConnell', 'Software Engineering', 'A comprehensive guide to software construction and best coding practices.', '978-0735619678', 6, 4, 2, 'uploads/books/code_complete.png'),
-(10, 'Algorithms Unlocked', 'Thomas H. Cormen', 'Algorithms', 'An accessible introduction to algorithms for beginners.', '978-0262518802', 6, 1, 5, 'uploads/books/algorithm_unlocked.png'),
-(11, 'You Don''t Know JS', 'Kyle Simpson', 'Programming', 'A deep dive into the core mechanisms of JavaScript.', '978-1491904244', 7, 5, 2, 'uploads/books/ydk_js.png'),
-(12, 'Atomic Habits', 'James Clear', 'Self-help', 'A guide to building good habits and breaking bad ones.', '978-0735211292', 6, 0, 6, 'uploads/books/atomic_habits.png'),
-(13, 'Computer Networking: A Top-Down Approach', 'James F. Kurose', 'Networking', 'A modern approach to understanding networking principles.', '978-0133594140', 5, 1, 4, 'uploads/books/computer_network.png'),
-(14, 'SQL Fundamentals', 'John J. Patrick', 'Database', 'An introduction to SQL and relational database concepts.', '978-0131407336', 8, 6, 2, 'uploads/books/sql_fundamentals.png'),
-(15, 'Working Effectively with Legacy Code', 'Michael Feathers', 'Software Engineering', 'Techniques for safely modifying and improving legacy systems.', '978-0131177055', 4, 0, 4, 'uploads/books/legacy_code.png');
+INSERT INTO books (id, title, author, category, description, isbn, total_quantity, available_quantity, borrowed_quantity, image_path, status) VALUES
+(1, 'Clean Code', 'Robert C. Martin', 'Software Engineering', 'A practical guide to writing readable, maintainable, and disciplined code.', '978-0132350884', 5, 2, 3, 'uploads/books/clean_code.png', 'active'),
+(2, 'Introduction to Algorithms', 'Thomas H. Cormen', 'Algorithms', 'A comprehensive textbook covering core algorithm design and analysis techniques.', '978-0262033848', 8, 6, 2, 'uploads/books/algorithms.png', 'active'),
+(3, 'The Pragmatic Programmer', 'Andrew Hunt and David Thomas', 'Programming', 'Timeless advice for improving craft, teamwork, and practical software delivery.', '978-0135957059', 6, 0, 6, 'uploads/books/pragmatic_programmer.png', 'active'),
+(4, 'Deep Work', 'Cal Newport', 'Self-help', 'Strategies for focused work and better productivity in a distracted environment.', '978-1455586691', 6, 2, 4, 'uploads/books/deep_work.png', 'active'),
+(5, 'Computer Networks', 'Andrew S. Tanenbaum', 'Networking', 'A foundation in network architectures, protocols, and real-world communication systems.', '978-0132126953', 4, 0, 4, 'uploads/books/computer_networks.png', 'active'),
+(6, 'Database System Concepts', 'Abraham Silberschatz', 'Database', 'A broad introduction to database design, SQL, transactions, and data management.', '978-0073523323', 9, 7, 2, 'uploads/books/database_system_concepts.png', 'active'),
+(7, 'Design Patterns', 'Erich Gamma et al.', 'Software Engineering', 'Classic reusable object-oriented design solutions for common software problems.', '978-0201633610', 4, 0, 4, 'uploads/books/design_patterns.png', 'active'),
+(8, 'Refactoring', 'Martin Fowler', 'Programming', 'Improving existing code through small, safe structural changes.', '978-0134757599', 7, 4, 3, 'uploads/books/refactoring.png', 'active'),
+(9, 'Code Complete', 'Steve McConnell', 'Software Engineering', 'A comprehensive guide to software construction and best coding practices.', '978-0735619678', 6, 4, 2, 'uploads/books/code_complete.png', 'active'),
+(10, 'Algorithms Unlocked', 'Thomas H. Cormen', 'Algorithms', 'An accessible introduction to algorithms for beginners.', '978-0262518802', 6, 1, 5, 'uploads/books/algorithm_unlocked.png', 'active'),
+(11, 'You Don''t Know JS', 'Kyle Simpson', 'Programming', 'A deep dive into the core mechanisms of JavaScript.', '978-1491904244', 7, 5, 2, 'uploads/books/ydk_js.png', 'active'),
+(12, 'Atomic Habits', 'James Clear', 'Self-help', 'A guide to building good habits and breaking bad ones.', '978-0735211292', 6, 0, 6, 'uploads/books/atomic_habits.png', 'active'),
+(13, 'Computer Networking: A Top-Down Approach', 'James F. Kurose', 'Networking', 'A modern approach to understanding networking principles.', '978-0133594140', 5, 1, 4, 'uploads/books/computer_network.png', 'active'),
+(14, 'SQL Fundamentals', 'John J. Patrick', 'Database', 'An introduction to SQL and relational database concepts.', '978-0131407336', 8, 6, 2, 'uploads/books/sql_fundamentals.png', 'active'),
+(15, 'Working Effectively with Legacy Code', 'Michael Feathers', 'Software Engineering', 'Techniques for safely modifying and improving legacy systems.', '978-0131177055', 4, 0, 4, 'uploads/books/legacy_code.png', 'active');
 
 INSERT INTO requests (id, user_id, book_id, status, request_date) VALUES
 (1, 2, 1, 'rejected', '2026-03-15'),

@@ -19,7 +19,8 @@ final class RequestRepository
                     r.status,
                     r.request_date,
                     u.name AS member_name,
-                    b.title AS book_title
+                    b.title AS book_title,
+                    b.status AS book_status
                 FROM requests r
                 INNER JOIN users u ON u.id = r.user_id
                 INNER JOIN books b ON b.id = r.book_id
@@ -42,7 +43,8 @@ final class RequestRepository
                     r.status,
                     r.request_date,
                     u.name AS member_name,
-                    b.title AS book_title
+                    b.title AS book_title,
+                    b.status AS book_status
                 FROM requests r
                 INNER JOIN users u ON u.id = r.user_id
                 INNER JOIN books b ON b.id = r.book_id
@@ -85,7 +87,8 @@ final class RequestRepository
                     r.status,
                     r.request_date,
                     u.name AS member_name,
-                    b.title AS book_title
+                    b.title AS book_title,
+                    b.status AS book_status
                 FROM requests r
                 INNER JOIN users u ON u.id = r.user_id
                 INNER JOIN books b ON b.id = r.book_id
@@ -113,6 +116,25 @@ final class RequestRepository
         ]);
 
         return (int) $this->pdo->lastInsertId();
+    }
+
+    public function hasPendingRequest(int $userId, int $bookId): bool
+    {
+        $sql = 'SELECT id
+                FROM requests
+                WHERE user_id = :user_id
+                  AND book_id = :book_id
+                  AND status = :status
+                LIMIT 1';
+
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute([
+            'user_id' => $userId,
+            'book_id' => $bookId,
+            'status' => 'pending',
+        ]);
+
+        return $statement->fetch(PDO::FETCH_ASSOC) !== false;
     }
 
     public function updateStatus(int $requestId, string $status): bool

@@ -18,11 +18,19 @@ require_login();
 $pageTitle = 'Books';
 $extraCss = '../../assets/css/books.css'; 
 
-$service = new BookService();
-
 $role = current_role() ?? ($_SESSION['role'] ?? 'member');
 $isAdmin = $role === 'admin';
 $isMember = $role === 'member';
+
+$databaseError = null;
+
+try {
+    $service = new BookService();
+} catch (Throwable $exception) {
+    error_log('Books module database error: ' . $exception->getMessage());
+    $service = null;
+    $databaseError = 'Books module is temporarily unavailable. Please try again later.';
+}
 
 $errorMessage = $_SESSION['flash_error'] ?? null;
 $successMessage = $_SESSION['flash_success'] ?? null;
@@ -34,7 +42,7 @@ $selectedBookId = (int)($_POST['book_id'] ?? 0);
 $showUpdateQuantityForm = $action === 'show_update_quantity';
 
 // POST ACTIONS
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $databaseError === null && $service !== null) {
     $token = (string)($_POST['csrf_token'] ?? '');
     if (!csrf_check($token)) {
         $errorMessage = 'Security check failed. Please try again.';
@@ -56,9 +64,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($isAdmin && $errorMessage === null && $action === 'delete_book') {
         if ($service->deleteBook($selectedBookId)) {
-            $successMessage = "Book deleted successfully from database!";
+            $successMessage = "Book archived successfully.";
         } else {
-            $errorMessage = "Failed to delete the book.";
+            $errorMessage = "Failed to archive the book.";
+        }
+    }
+
+    if ($isAdmin && $errorMessage === null && $action === 'restore_book') {
+        if ($service->restoreBook($selectedBookId)) {
+            $successMessage = "Book restored successfully.";
+        } else {
+            $errorMessage = "Failed to restore the book.";
         }
     }
 
@@ -84,10 +100,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // FETCH & FILTER DATA
-$allBooks = $service->getAllBooks();
+$allBooks = $service !== null ? $service->getAllBooks($isAdmin) : [];
 $categories = $service->getCategories($allBooks);
 
-$selectedBook = ($selectedBookId > 0) ? $service->getBookById($selectedBookId) : null;
+$selectedBook = ($selectedBookId > 0 && $service !== null) ? $service->getBookById($selectedBookId) : null;
 
 $search = trim((string)($_GET['search'] ?? ''));
 $category = trim((string)($_GET['category'] ?? ''));
@@ -121,6 +137,7 @@ require_once __DIR__ . '/../includes/navbar.php';
         <article class="card"><span class="books-summary-value"><?= $visibleBooks ?></span><span class="text-muted">Visible results</span></article>
     </section>
 
+    <?php if ($databaseError !== null): ?><div class="flash flash-error"><?= e($databaseError) ?></div><?php endif; ?>
     <?php if ($errorMessage): ?><div class="flash flash-error"><?= e($errorMessage) ?></div><?php endif; ?>
     <?php if ($successMessage): ?><div class="flash flash-success"><?= e($successMessage) ?></div><?php endif; ?>
 
@@ -196,7 +213,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                             <p class="book-meta">By <?= e($book->getAuthor()) ?></p>
                         </div>
                         <span class="badge <?= $book->getAvailableQuantity() > 0 ? 'badge-success' : 'badge-warning' ?>">
-                            <?= $book->getAvailableQuantity() > 0 ? 'Available' : 'Out of Stock' ?>
+                            <?= $book->getStatus() === 'archived' ? 'Archived' : ($book->getAvailableQuantity() > 0 ? 'Available' : 'Out of Stock') ?>
                         </span>
                     </div>
                     <div class="book-cover-container">
@@ -221,8 +238,13 @@ require_once __DIR__ . '/../includes/navbar.php';
                             <?php if ($isAdmin): ?>
                                 <a href="book-edit.php?id=<?= $book->getId() ?>" class="btn btn-primary">Edit</a>
                                 <button type="submit" name="action" value="show_update_quantity" class="btn btn-secondary">Quantity</button>
-                                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                                <button type="submit" name="action" value="delete_book" class="btn btn-danger" onclick="return confirm('Delete this book?');">Delete</button>
+                                <?php if ($book->getStatus() === 'active'): ?>
+                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                    <button type="submit" name="action" value="delete_book" class="btn btn-danger" onclick="return confirm('Archive this book?');">Archive</button>
+                                <?php else: ?>
+                                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                    <button type="submit" name="action" value="restore_book" class="btn btn-secondary" onclick="return confirm('Restore this book?');">Restore</button>
+                                <?php endif; ?>
                             <?php elseif ($isMember && $book->getAvailableQuantity() > 0): ?>
                                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                 <button type="submit" name="action" value="request_book" class="btn btn-primary">Request</button>

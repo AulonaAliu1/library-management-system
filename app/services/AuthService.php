@@ -26,6 +26,10 @@ class AuthService
             return null;
         }
 
+        if ((string) ($user['status'] ?? 'active') !== 'active') {
+            return null;
+        }
+
         $storedPassword = (string) ($user['password'] ?? '');
 
         if (! password_verify($password, $storedPassword)) {
@@ -46,6 +50,10 @@ class AuthService
         $user = $this->users->findByEmail($email);
 
         if ($user === null) {
+            return null;
+        }
+
+        if ((string) ($user['status'] ?? 'active') !== 'active') {
             return null;
         }
 
@@ -93,6 +101,7 @@ class AuthService
             'username' => (string) ($user['username'] ?? ''),
             'email' => (string) ($user['email'] ?? ''),
             'role' => (string) ($user['role'] ?? 'member'),
+            'status' => (string) ($user['status'] ?? 'active'),
         ];
     }
 }
