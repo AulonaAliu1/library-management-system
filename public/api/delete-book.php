@@ -58,20 +58,21 @@ try {
     if ($deleted) {
         echo json_encode([
             'success' => true,
-            'message' => 'Book was deleted successfully from the database.'
+            'message' => 'Book was archived successfully.'
         ]);
     } else {
         http_response_code(400);
         echo json_encode([
             'success' => false,
-            'message' => 'Failed to delete the book. It may not exist.'
+            'message' => 'Failed to archive the book. It may not exist.'
         ]);
     }
 } catch (Exception $e) {
+    error_log('Book archive API error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Server error: ' . $e->getMessage()
+        'message' => 'Unable to archive the book right now.'
     ]);
 }
 exit;

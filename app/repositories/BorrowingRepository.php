@@ -20,7 +20,8 @@ final class BorrowingRepository
                     br.return_date,
                     br.status,
                     u.name AS member_name,
-                    b.title AS book_title
+                    b.title AS book_title,
+                    b.status AS book_status
                 FROM borrowings br
                 INNER JOIN users u ON u.id = br.user_id
                 INNER JOIN books b ON b.id = br.book_id
@@ -44,7 +45,8 @@ final class BorrowingRepository
                     br.return_date,
                     br.status,
                     u.name AS member_name,
-                    b.title AS book_title
+                    b.title AS book_title,
+                    b.status AS book_status
                 FROM borrowings br
                 INNER JOIN users u ON u.id = br.user_id
                 INNER JOIN books b ON b.id = br.book_id
@@ -99,6 +101,25 @@ final class BorrowingRepository
         ]);
 
         return (int) $this->pdo->lastInsertId();
+    }
+
+    public function hasActiveBorrowing(int $userId, int $bookId): bool
+    {
+        $sql = 'SELECT id
+                FROM borrowings
+                WHERE user_id = :user_id
+                  AND book_id = :book_id
+                  AND status = :status
+                LIMIT 1';
+
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute([
+            'user_id' => $userId,
+            'book_id' => $bookId,
+            'status' => 'active',
+        ]);
+
+        return $statement->fetch(PDO::FETCH_ASSOC) !== false;
     }
 
     public function markReturned(int $borrowingId): bool

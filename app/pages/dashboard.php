@@ -20,6 +20,9 @@ require_once __DIR__ . '/../helpers/auth_guard.php';
 require_login();
 
 $pageTitle = 'Dashboard';
+$databaseError = ! ($pdo instanceof PDO)
+    ? 'Dashboard is temporarily unavailable until the database connection is restored.'
+    : null;
 ?>
 
 <?php 
@@ -40,7 +43,8 @@ require_once __DIR__ . '/../includes/navbar.php';
 // $userService= new UserService();
 // $bookService=new BookService();
 // $requestService=new RequestService();
-$stmt=$pdo->query("SELECT COUNT(*) AS total_books FROM books");
+if ($databaseError === null) {
+    $stmt=$pdo->query("SELECT COUNT(*) AS total_books FROM books WHERE status = 'active'");
 
 
 $result =$stmt->fetch();
@@ -76,6 +80,7 @@ $borrowingsQuery = $pdo->query(
 $borrowings = $borrowingsQuery->fetch();
 
 $activeBorrowings = $borrowings['active_borrowings'];
+}
 
 
 ?>
@@ -87,10 +92,9 @@ $activeBorrowings = $borrowings['active_borrowings'];
 
 <h1>Dashboard</h1>
 
-<?php
-
-
-if ($user['role'] === 'admin') :
+<?php if ($databaseError !== null): ?>
+    <p><strong><?= htmlspecialchars($databaseError) ?></strong></p>
+<?php elseif ($user['role'] === 'admin') :
 
 ?>
  <h2>Admin Overview</h2>

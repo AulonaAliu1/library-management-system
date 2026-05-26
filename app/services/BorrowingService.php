@@ -105,7 +105,10 @@ final class BorrowingService
     private function increaseBookAvailability(int $bookId): bool
     {
         $sql = 'UPDATE books
-                SET available_quantity = available_quantity + 1,
+                SET available_quantity = CASE
+                        WHEN available_quantity + 1 > total_quantity THEN total_quantity
+                        ELSE available_quantity + 1
+                    END,
                     borrowed_quantity = CASE
                         WHEN borrowed_quantity > 0 THEN borrowed_quantity - 1
                         ELSE 0

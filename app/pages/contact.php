@@ -7,14 +7,18 @@ session_start();
 define('LMS_ENTRY', 'pages');
 
 require_once __DIR__ . '/../core/Database.php';
+require_once __DIR__ . '/../helpers/auth_guard.php';
 require_once __DIR__ . '/../helpers/functions.php';
+require_once __DIR__ . '/../helpers/security.php';
 require_once __DIR__ . '/../helpers/validation.php';
 require_once __DIR__ . '/../services/MailService.php';
+
+require_member();
 
 $pdo = Database::connection();
 
 if (!$pdo) {
-    die(Database::lastError());
+    error_log('Contact database error: ' . (Database::lastError() ?? 'Unknown database error'));
 }
 
 $pageTitle = 'Contact Us';
@@ -33,7 +37,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subject = trim((string) ($_POST['subject'] ?? ''));
     $text = trim((string) ($_POST['message'] ?? ''));
 
-    if(
+    if (! csrf_check((string) ($_POST['csrf_token'] ?? ''))) {
+        $message = 'Security check failed. Please try again.';
+
+    }
+    elseif (! ($pdo instanceof PDO)) {
+        $message = 'Contact form is temporarily unavailable. Please try again later.';
+
+    }
+    elseif(
         ! is_filled($name) ||
         ! is_filled($email) ||
         ! is_filled($subject) ||
@@ -119,6 +131,7 @@ require_once __DIR__ . '/../includes/navbar.php';
 
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
             <input
                 type="text"

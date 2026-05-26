@@ -24,7 +24,8 @@ $databaseError = ! ($pdo instanceof PDO)
     ? 'Members module is not available until the database connection is configured.'
     : null;
 
-if ($databaseError === null && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_member') {
+if ($databaseError === null && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = (string) ($_POST['action'] ?? '');
     $token = (string) ($_POST['csrf_token'] ?? '');
     $memberId = (int) ($_POST['member_id'] ?? 0);
 
@@ -34,11 +35,24 @@ if ($databaseError === null && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST[
     } elseif ($memberId <= 0) {
         flash_set('error', 'Invalid member id.');
         redirect('members.php');
-    } elseif ($userService->deleteMember($memberId)) {
-        flash_set('success', 'Member deleted successfully.');
+    } elseif ($action === 'delete_member') {
+        if ($userService->deleteMember($memberId)) {
+            flash_set('success', 'Member deactivated successfully.');
+            redirect('members.php');
+        }
+
+        flash_set('error', 'Could not deactivate the member.');
+        redirect('members.php');
+    } elseif ($action === 'reactivate_member') {
+        if ($userService->reactivateMember($memberId)) {
+            flash_set('success', 'Member reactivated successfully.');
+            redirect('members.php');
+        }
+
+        flash_set('error', 'Could not reactivate the member.');
         redirect('members.php');
     } else {
-        flash_set('error', 'Could not delete the member.');
+        flash_set('error', 'Invalid member action.');
         redirect('members.php');
     }
 }
@@ -54,7 +68,7 @@ require_once __DIR__ . '/../includes/navbar.php';
 <main class="container main-content">
     <h1>Members</h1>
     <p class="text-muted">
-        Admin can create, edit, and delete member accounts from the database.
+        Admin can create, edit, and deactivate member accounts while preserving history.
     </p>
 
     <?php if ($databaseError !== null): ?>
@@ -72,6 +86,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                     <th>Username</th>
                     <th>Email</th>
                     <th>Role</th>
+                    <th>Status</th>
                     <th>Created</th>
                     <th>Actions</th>
                 </tr>
@@ -80,7 +95,7 @@ require_once __DIR__ . '/../includes/navbar.php';
             <tbody>
                 <?php if ($members === []): ?>
                     <tr>
-                        <td colspan="7">No members found.</td>
+                        <td colspan="8">No members found.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($members as $member): ?>
@@ -90,6 +105,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                             <td><?= e($member['username'] ?? '') ?></td>
                             <td><?= e($member['email'] ?? '') ?></td>
                             <td><?= e($member['role'] ?? '') ?></td>
+                            <td><?= e(ucfirst((string) ($member['status'] ?? 'active'))) ?></td>
                             <td><?= e($member['created_at'] ?? '-') ?></td>
 
                             <td>
@@ -97,25 +113,47 @@ require_once __DIR__ . '/../includes/navbar.php';
                                     Edit
                                 </a>
 
-                                <form method="POST" style="display:inline-block; margin-left: 8px;">
-                                    <input type="hidden" name="action" value="delete_member">
+                                <?php if ((string) ($member['status'] ?? 'active') === 'active'): ?>
+                                    <form method="POST" style="display:inline-block; margin-left: 8px;">
+                                        <input type="hidden" name="action" value="delete_member">
 
-                                    <input
-                                        type="hidden"
-                                        name="member_id"
-                                        value="<?= (int) $member['id'] ?>"
-                                    >
+                                        <input
+                                            type="hidden"
+                                            name="member_id"
+                                            value="<?= (int) $member['id'] ?>"
+                                        >
 
-                                    <input
-                                        type="hidden"
-                                        name="csrf_token"
-                                        value="<?= e(csrf_token()) ?>"
-                                    >
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="<?= e(csrf_token()) ?>"
+                                        >
 
-                                    <button type="submit">
-                                        Delete
-                                    </button>
-                                </form>
+                                        <button type="submit">
+                                            Deactivate
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <form method="POST" style="display:inline-block; margin-left: 8px;">
+                                        <input type="hidden" name="action" value="reactivate_member">
+
+                                        <input
+                                            type="hidden"
+                                            name="member_id"
+                                            value="<?= (int) $member['id'] ?>"
+                                        >
+
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="<?= e(csrf_token()) ?>"
+                                        >
+
+                                        <button type="submit">
+                                            Reactivate
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

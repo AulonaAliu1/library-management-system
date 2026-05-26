@@ -13,9 +13,9 @@ class BookService
     }
 
     
-    public function getAllBooks(): array
+    public function getAllBooks(bool $includeArchived = false): array
     {
-        $rows = $this->bookRepository->findAll();
+        $rows = $this->bookRepository->findAll($includeArchived);
 
         return array_map(
             fn (array $row): Book => $this->rowToBook($row),
@@ -60,7 +60,11 @@ class BookService
     }
 
     public function deleteBook(int $id): bool{
-        return $this->bookRepository->delete($id);
+        return $this->bookRepository->archive($id);
+    }
+
+    public function restoreBook(int $id): bool{
+        return $this->bookRepository->restore($id);
     }
 
     public function rowToBook(array $row): Book
@@ -75,7 +79,8 @@ class BookService
             (int) ($row['total_quantity'] ?? $row['totalQuantity'] ?? 0),
             (int) ($row['available_quantity'] ?? $row['availableQuantity'] ?? 0),
             (int) ($row['borrowed_quantity'] ?? $row['borrowedQuantity'] ?? 0),
-            $row['image_path'] ?? null
+            $row['image_path'] ?? null,
+            (string) ($row['status'] ?? 'active')
         );
     }
 

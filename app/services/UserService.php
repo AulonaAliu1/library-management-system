@@ -71,6 +71,7 @@ class UserService
     {
         $existingMember = $this->users->findMemberById($id);
         $member = $this->normalizeMemberInput($input);
+        $member['password'] = '';
 
         if ($existingMember === null) {
             return [
@@ -101,7 +102,71 @@ class UserService
             return false;
         }
 
-        return $this->users->delete($id);
+        return $this->users->deactivateMember($id);
+    }
+
+    public function reactivateMember(int $id): bool
+    {
+        $member = $this->users->findMemberById($id);
+
+        if ($member === null) {
+            return false;
+        }
+
+        return $this->users->reactivateMember($id);
+    }
+
+    /**
+     * @return array{success: bool, errors: array<string, string>, user: array<string, string>}
+     */
+    public function updateProfile(int $id, array $input): array
+    {
+        $existingUser = $this->users->findById($id);
+        $user = [
+            'name' => trim((string) ($input['name'] ?? '')),
+            'username' => trim((string) ($input['username'] ?? '')),
+            'email' => trim((string) ($input['email'] ?? '')),
+        ];
+
+        if ($existingUser === null || (string) ($existingUser['status'] ?? 'active') !== 'active') {
+            return [
+                'success' => false,
+                'errors' => ['general' => 'User not found.'],
+                'user' => $user,
+            ];
+        }
+
+        $errors = [];
+
+        if (! is_filled($user['name'])) {
+            $errors['name'] = 'Name is required.';
+        }
+
+        if (! is_filled($user['username'])) {
+            $errors['username'] = 'Username is required.';
+        } elseif (! is_valid_username($user['username'])) {
+            $errors['username'] = 'Username must start with a letter and contain only letters, numbers, or underscores.';
+        } elseif ($this->users->usernameExists($user['username'], $id)) {
+            $errors['username'] = 'This username is already in use.';
+        }
+
+        if (! is_filled($user['email'])) {
+            $errors['email'] = 'Email is required.';
+        } elseif (! is_valid_email($user['email'])) {
+            $errors['email'] = 'Please enter a valid email address.';
+        } elseif ($this->users->emailExists($user['email'], $id)) {
+            $errors['email'] = 'This email is already in use.';
+        }
+
+        if ($errors === [] && ! $this->users->updateProfile($id, $user)) {
+            $errors['general'] = 'Unable to update your profile.';
+        }
+
+        return [
+            'success' => $errors === [],
+            'errors' => $errors,
+            'user' => $user,
+        ];
     }
 
     /**
@@ -114,6 +179,7 @@ class UserService
             'username' => trim((string) ($input['username'] ?? '')),
             'email' => trim((string) ($input['email'] ?? '')),
             'role' => 'member',
+            'status' => 'active',
             'password' => (string) ($input['password'] ?? ''),
         ];
     }

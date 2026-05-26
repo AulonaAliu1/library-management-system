@@ -33,7 +33,6 @@ $formData = [
     'username' => (string) ($member['username'] ?? ''),
     'email' => (string) ($member['email'] ?? ''),
     'role' => 'member',
-    'password' => '',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -94,12 +93,6 @@ require_once __DIR__ . '/../includes/navbar.php';
                 <option value="member" selected>member</option>
             </select>
             <?php if (isset($errors['role'])): ?><br><small><?= e($errors['role']) ?></small><?php endif; ?>
-        </p>
-
-        <p>
-            <label>New Password (optional)</label><br>
-            <input type="password" name="password">
-            <?php if (isset($errors['password'])): ?><br><small><?= e($errors['password']) ?></small><?php endif; ?>
         </p>
 
         <p>

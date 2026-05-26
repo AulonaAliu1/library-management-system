@@ -16,16 +16,23 @@ require_admin();
 $pageTitle = 'Add new Book';
 $extraCss = './../../assets/css/books.css';
 
-$bookService = new BookService();
 $uploadService = new FileUploadService();
 
 $errorMessage = null;
 $successMessage = null;
 
-if($_SERVER['REQUEST_METHOD'] === 'POST'){
+try {
+    $bookService = new BookService();
+} catch (Throwable $exception) {
+    error_log('Book create database error: ' . $exception->getMessage());
+    $bookService = null;
+    $errorMessage = 'Books module is temporarily unavailable. Please try again later.';
+}
+
+if($_SERVER['REQUEST_METHOD'] === 'POST' && $bookService !== null){
     $token = (string)($_POST['csrf_token'] ?? '');
     if(!csrf_check($token)){
-        die("Unauthorized request (Invalid CSRF Token).");
+        $errorMessage = 'Security check failed. Please try again.';
     }
     $title = trim((string)($_POST['title'] ?? ''));
     $author = trim((string)($_POST['author'] ?? ''));
@@ -34,9 +41,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     $total_quantity = (int)($_POST['total_quantity'] ?? 0);
     $description = trim((string)($_POST['description'] ?? ''));
 
-    if(!is_filled($title) || !is_filled($author)){
+    if($errorMessage === null && (!is_filled($title) || !is_filled($author))){
         $errorMessage = "Title and Author fields are required.";
-    }else{
+    } elseif ($errorMessage === null) {
         try{
             $imagePath = null;
 
@@ -62,7 +69,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                 $errorMessage = "Failed to save the book. The ISBN code might already exist.";
             }
         }catch(Exception $e){
-            $errorMessage = $e->getMessage();
+            error_log('Book create error: ' . $e->getMessage());
+            $errorMessage = 'Unable to save the book right now.';
         }
     }
 }

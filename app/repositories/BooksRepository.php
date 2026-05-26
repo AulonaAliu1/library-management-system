@@ -8,11 +8,25 @@ class BookRepository{
 
     public function __construct(?PDO $db = null)
     {
-        $this->db = $db ?? Database::connection();
+        $connection = $db ?? Database::connection();
+
+        if (! ($connection instanceof PDO)) {
+            throw new RuntimeException('Database connection is not available.');
+        }
+
+        $this->db = $connection;
     }
 
-    public function findAll(): array{
-        $stmt = $this->db->query("SELECT * FROM books ORDER BY title ASC");
+    public function findAll(bool $includeArchived = false): array{
+        $sql = "SELECT * FROM books";
+
+        if (! $includeArchived) {
+            $sql .= " WHERE status = 'active'";
+        }
+
+        $sql .= " ORDER BY title ASC";
+
+        $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
 
@@ -33,8 +47,8 @@ class BookRepository{
     }
 
     public function create(array $data): bool{
-        $sql = "INSERT INTO books(title, author, category, isbn, total_quantity, available_quantity, borrowed_quantity, description, image_path) 
-                VALUES (:title, :author, :category, :isbn, :total_quantity, :available_quantity, 0, :description, :image_path)";
+        $sql = "INSERT INTO books(title, author, category, isbn, total_quantity, available_quantity, borrowed_quantity, description, image_path, status)
+                VALUES (:title, :author, :category, :isbn, :total_quantity, :available_quantity, 0, :description, :image_path, :status)";
 
         $stmt = $this->db->prepare($sql);
 
@@ -46,7 +60,8 @@ class BookRepository{
         ':total_quantity' => $data['total_quantity'],
         ':available_quantity' => $data['total_quantity'],
         ':description' => $data['description'],
-        ':image_path' => $data['image_path'] ?? null
+        ':image_path' => $data['image_path'] ?? null,
+        ':status' => $data['status'] ?? 'active'
         ]);
     }
 
@@ -108,8 +123,19 @@ class BookRepository{
         ]);
     }
 
-    public function delete(int $id): bool{
-        $stmt = $this->db->prepare("DELETE FROM books WHERE id = :id");
-        return $stmt->execute([':id' => $id]);
+    public function archive(int $id): bool{
+        $stmt = $this->db->prepare("UPDATE books SET status = :status WHERE id = :id");
+        return $stmt->execute([
+            ':id' => $id,
+            ':status' => 'archived',
+        ]);
+    }
+
+    public function restore(int $id): bool{
+        $stmt = $this->db->prepare("UPDATE books SET status = :status WHERE id = :id");
+        return $stmt->execute([
+            ':id' => $id,
+            ':status' => 'active',
+        ]);
     }
 }
